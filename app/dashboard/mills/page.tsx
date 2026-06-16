@@ -1,5 +1,5 @@
 import { getMills } from "@/actions/mills"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Building2, Plus, Pencil, Trash2 } from "lucide-react"
@@ -19,12 +19,10 @@ export default async function MillsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Mills Management</h1>
-        <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <Link href="/dashboard/mills/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Mill
-          </Link>
-        </Button>
+        <Link href="/dashboard/mills/new" className={buttonVariants({ className: "bg-emerald-600 hover:bg-emerald-700" })}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Mill
+        </Link>
       </div>
 
       <Card>
@@ -70,11 +68,9 @@ export default async function MillsPage({
                     <TableCell>{mill.email || "-"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="icon" asChild>
-                          <Link href={`/dashboard/mills/${mill.id}/edit`}>
-                            <Pencil className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        <Link href={`/dashboard/mills/${mill.id}/edit`} className={buttonVariants({ variant: "outline", size: "icon" })}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
                         <DeleteMillButton id={mill.id} millName={mill.name} />
                       </div>
                     </TableCell>

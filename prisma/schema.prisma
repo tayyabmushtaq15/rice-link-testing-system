@@ -38,5 +38,29 @@ model Mill {
   address    String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt DateTime @updatedAt
+  paddyLots PaddyLot[]
+}
+
+enum LotStatus {
+  OPEN
+  PROCESSING
+  COMPLETED
+}
+
+model PaddyLot {
+  id             String    @id @default(uuid())
+  lotNumber      String    @unique
+  millId         String
+  mill           Mill      @relation(fields: [millId], references: [id])
+  supplierName   String
+  variety        String
+  cropYear       String
+  purchaseDate   DateTime
+  weight         Float     // In KG
+  moisture       Float     // Percentage
+  purchaseRate   Float
+  status         LotStatus @default(OPEN)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

@@ -1,7 +1,7 @@
 import { getMill } from "@/actions/mills"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, ArrowLeft, MapPin, Phone, Mail, User, Calendar } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -21,19 +21,17 @@ export default async function MillDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
-            <Link href="/dashboard/mills">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/dashboard/mills" className={buttonVariants({ variant: "outline", size: "icon" })}>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
           <div className="flex items-center gap-2">
             <Building2 className="h-6 w-6 text-emerald-600" />
             <h1 className="text-3xl font-bold tracking-tight">{mill.name}</h1>
           </div>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/dashboard/mills/${mill.id}/edit`}>Edit Mill</Link>
-        </Button>
+        <Link href={`/dashboard/mills/${mill.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+          Edit Mill
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

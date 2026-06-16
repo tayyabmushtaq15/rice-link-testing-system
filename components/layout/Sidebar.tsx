@@ -27,6 +27,13 @@ export async function Sidebar() {
           Quality Control
         </Link>
         
+        {(isAdmin || session?.user?.role === "ANALYST") && (
+          <Link href="/dashboard/lots" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
+            <FileText className="h-5 w-5" />
+            Paddy Lots
+          </Link>
+        )}
+        
         {isAdmin && (
           <Link href="/dashboard/mills" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
             <Building2 className="h-5 w-5" />
