@@ -41,6 +41,13 @@ export async function Sidebar() {
           </Link>
         )}
 
+        {isAdmin && (
+          <Link href="/dashboard/templates" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
+            <FileText className="h-5 w-5" />
+            Report Templates
+          </Link>
+        )}
+
         <Link href="/dashboard/users" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
           <Users className="h-5 w-5" />
           Users
