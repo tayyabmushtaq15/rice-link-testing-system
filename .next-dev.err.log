@@ -1,0 +1,40 @@
+ ⨯ Error: Unauthorized: Only Analysts can manage reports
+    at checkAnalyst (actions\reports.ts:24:11)
+    at async getReports (actions\reports.ts:215:21)
+    at async ReportsPage (app\dashboard\reports\page.tsx:19:19)
+  22 |   const session = await auth()
+  23 |   if (!session || session.user?.role !== "ANALYST" || !session.user.id) {
+> 24 |     throw new Error("Unauthorized: Only Analysts can manage reports")
+     |           ^
+  25 |   }
+  26 |
+  27 |   return session.user.id {
+  digest: '2778214362'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ Error: Unauthorized: Only Analysts can manage reports
+    at checkAnalyst (actions\reports.ts:24:11)
+    at async getReports (actions\reports.ts:215:21)
+    at async ReportsPage (app\dashboard\reports\page.tsx:19:19)
+  22 |   const session = await auth()
+  23 |   if (!session || session.user?.role !== "ANALYST" || !session.user.id) {
+> 24 |     throw new Error("Unauthorized: Only Analysts can manage reports")
+     |           ^
+  25 |   }
+  26 |
+  27 |   return session.user.id {
+  digest: '2778214362'
+}
+ ⨯ Error: Unauthorized: Only Analysts can manage reports
+    at checkAnalyst (actions\reports.ts:24:11)
+    at async getReports (actions\reports.ts:215:21)
+    at async ReportsPage (app\dashboard\reports\page.tsx:19:19)
+  22 |   const session = await auth()
+  23 |   if (!session || session.user?.role !== "ANALYST" || !session.user.id) {
+> 24 |     throw new Error("Unauthorized: Only Analysts can manage reports")
+     |           ^
+  25 |   }
+  26 |
+  27 |   return session.user.id {
+  digest: '2778214362'
+}

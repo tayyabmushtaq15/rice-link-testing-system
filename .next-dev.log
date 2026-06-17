@@ -1,0 +1,56 @@
+
+> temp-app@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.19
+   - Local:        http://localhost:3000
+   - Network:      http://172.16.30.228:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 3.2s
+ ✓ Compiled /middleware in 342ms (232 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.8s (1260 modules)
+ GET /dashboard 200 in 4611ms
+ ○ Compiling /dashboard/reports ...
+ ✓ Compiled /dashboard/reports in 1822ms (1310 modules)
+ GET /dashboard/reports 500 in 2714ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 620ms (1310 modules)
+ GET /dashboard/reports 404 in 997ms
+ ✓ Compiled /favicon.ico in 399ms (876 modules)
+ GET /favicon.ico 200 in 697ms
+ GET /dashboard/reports 500 in 573ms
+ ○ Compiling / ...
+ ✓ Compiled / in 702ms (1319 modules)
+ GET / 307 in 1064ms
+ ✓ Compiled /dashboard in 343ms (883 modules)
+ GET /dashboard 200 in 932ms
+ GET /dashboard 200 in 219ms
+ GET /favicon.ico 200 in 61ms
+ GET /dashboard/reports 500 in 335ms
+ GET / 307 in 146ms
+ GET /dashboard 200 in 304ms
+ GET /dashboard/production 404 in 73ms
+ GET /dashboard 200 in 139ms
+ ○ Compiling /dashboard/lots ...
+ ✓ Compiled /dashboard/lots in 2.3s (1400 modules)
+ GET /dashboard/lots 200 in 4548ms
+ GET / 307 in 113ms
+ GET /dashboard 200 in 209ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1511ms (1381 modules)
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 1981ms
+ ✓ Compiled in 1591ms (1395 modules)
+ ✓ Compiled in 422ms (1395 modules)
+ ✓ Compiled /dashboard in 398ms (914 modules)
+ GET /dashboard 200 in 1015ms
+ ✓ Compiled /favicon.ico in 374ms (919 modules)
+ GET /favicon.ico 200 in 604ms
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 386ms
+ ○ Compiling / ...
+ ✓ Compiled / in 708ms (913 modules)
+ GET / 307 in 1074ms
+ ✓ Compiled /dashboard in 326ms (916 modules)
+ GET /dashboard 200 in 902ms

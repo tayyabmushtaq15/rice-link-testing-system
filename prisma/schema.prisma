@@ -20,25 +20,27 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(ANALYST)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String
+  name            String?
+  role            Role     @default(ANALYST)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  reports         Report[]
+  approvedReports Report[] @relation("ReportApprovedBy")
 }
 
 model Mill {
-  id         String   @id @default(uuid())
-  name       String
-  ownerName  String
-  phone      String?
-  email      String?
-  address    String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(uuid())
+  name      String
+  ownerName String
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   paddyLots PaddyLot[]
 }
 
@@ -49,20 +51,21 @@ enum LotStatus {
 }
 
 model PaddyLot {
-  id             String    @id @default(uuid())
-  lotNumber      String    @unique
-  millId         String
-  mill           Mill      @relation(fields: [millId], references: [id])
-  supplierName   String
-  variety        String
-  cropYear       String
-  purchaseDate   DateTime
-  weight         Float     // In KG
-  moisture       Float     // Percentage
-  purchaseRate   Float
-  status         LotStatus @default(OPEN)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  lotNumber    String    @unique
+  millId       String
+  mill         Mill      @relation(fields: [millId], references: [id])
+  supplierName String
+  variety      String
+  cropYear     String
+  purchaseDate DateTime
+  weight       Float // In KG
+  moisture     Float // Percentage
+  purchaseRate Float
+  status       LotStatus @default(OPEN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  reports      Report[]
 }
 
 enum FieldType {
@@ -72,13 +75,14 @@ enum FieldType {
 }
 
 model ReportTemplate {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   name        String
   description String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean         @default(true)
   fields      TemplateField[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  reports     Report[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model TemplateField {
@@ -89,4 +93,47 @@ model TemplateField {
   type         FieldType
   orderIndex   Int
   isRequired   Boolean        @default(true)
+  reportValues ReportValue[]
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Report {
+  id              String         @id @default(uuid())
+  paddyLotId      String
+  paddyLot        PaddyLot       @relation(fields: [paddyLotId], references: [id])
+  templateId      String
+  template        ReportTemplate @relation(fields: [templateId], references: [id])
+  analystId       String
+  analyst         User           @relation(fields: [analystId], references: [id])
+  approvedById    String?
+  approvedBy      User?          @relation("ReportApprovedBy", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  status          ReportStatus   @default(DRAFT)
+  submissionDate  DateTime?
+  values          ReportValue[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([paddyLotId])
+  @@index([templateId])
+  @@index([analystId])
+  @@index([status])
+}
+
+model ReportValue {
+  id              String        @id @default(uuid())
+  reportId        String
+  report          Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  templateFieldId String
+  templateField   TemplateField @relation(fields: [templateFieldId], references: [id])
+  value           String
+
+  @@unique([reportId, templateFieldId])
 }

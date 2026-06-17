@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, Users, FileText, Settings, Factory, Building2 } from "lucide-react"
+import { Home, Users, FileText, Settings, Factory, Building2, ClipboardList } from "lucide-react"
 import { auth } from "@/auth"
 
 export async function Sidebar() {
@@ -31,6 +31,13 @@ export async function Sidebar() {
           <Link href="/dashboard/lots" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
             <FileText className="h-5 w-5" />
             Paddy Lots
+          </Link>
+        )}
+
+        {session?.user?.role === "ANALYST" && (
+          <Link href="/dashboard/reports" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
+            <ClipboardList className="h-5 w-5" />
+            Report Entries
           </Link>
         )}
         
