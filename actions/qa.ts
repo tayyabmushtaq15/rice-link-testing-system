@@ -5,13 +5,22 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
-async function checkQA() {
+async function getSessionUser() {
   const session = await auth()
-  if (!session || session.user?.role !== "QA" || !session.user.id) {
-    throw new Error("Unauthorized: Only QA users can perform this action")
+  if (!session || !session.user?.role || !session.user.id) {
+    throw new Error("Unauthorized: Please sign in")
   }
 
-  return session.user.id
+  return session.user
+}
+
+async function checkQAOrAdmin() {
+  const user = await getSessionUser()
+  if (!['QA', 'ADMIN'].includes(user.role)) {
+    throw new Error("Unauthorized: Only QA or Admin users can perform this action")
+  }
+
+  return user
 }
 
 const approveSchema = z.object({
@@ -29,7 +38,7 @@ const returnSchema = z.object({
 })
 
 export async function getSubmittedReports() {
-  await checkQA()
+  await checkQAOrAdmin()
 
   return prisma.report.findMany({
     where: { status: "SUBMITTED" },
@@ -44,7 +53,7 @@ export async function getSubmittedReports() {
 }
 
 export async function approveReport(data: z.infer<typeof approveSchema>) {
-  const qaId = await checkQA()
+  const user = await checkQAOrAdmin()
   const { reportId } = approveSchema.parse(data)
 
   const report = await prisma.report.findUnique({ where: { id: reportId } })
@@ -55,7 +64,7 @@ export async function approveReport(data: z.infer<typeof approveSchema>) {
     where: { id: reportId },
     data: {
       status: "APPROVED",
-      approvedById: qaId,
+      approvedById: user.id,
       approvedAt: new Date(),
       rejectionReason: null,
     },
@@ -69,7 +78,7 @@ export async function approveReport(data: z.infer<typeof approveSchema>) {
 }
 
 export async function rejectReport(data: z.infer<typeof rejectSchema>) {
-  const qaId = await checkQA()
+  const user = await checkQAOrAdmin()
   const { reportId, reason } = rejectSchema.parse(data)
 
   const report = await prisma.report.findUnique({ where: { id: reportId } })
@@ -80,7 +89,7 @@ export async function rejectReport(data: z.infer<typeof rejectSchema>) {
     where: { id: reportId },
     data: {
       status: "REJECTED",
-      approvedById: qaId,
+      approvedById: user.id,
       approvedAt: new Date(),
       rejectionReason: reason,
     },
@@ -94,7 +103,7 @@ export async function rejectReport(data: z.infer<typeof rejectSchema>) {
 }
 
 export async function returnToAnalyst(data: z.infer<typeof returnSchema>) {
-  const qaId = await checkQA()
+  const user = await checkQAOrAdmin()
   const { reportId, note } = returnSchema.parse(data)
 
   const report = await prisma.report.findUnique({ where: { id: reportId } })

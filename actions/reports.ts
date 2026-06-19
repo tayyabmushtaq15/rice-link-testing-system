@@ -18,13 +18,22 @@ const reportEntrySchema = z.object({
 
 export type ReportEntryFormValues = z.infer<typeof reportEntrySchema>
 
-async function checkAnalyst() {
+async function getSessionUser() {
   const session = await auth()
-  if (!session || session.user?.role !== "ANALYST" || !session.user.id) {
-    throw new Error("Unauthorized: Only Analysts can manage reports")
+  if (!session || !session.user?.role || !session.user.id) {
+    throw new Error("Unauthorized: Please sign in")
   }
 
-  return session.user.id
+  return session.user
+}
+
+async function checkAnalystOrAdmin() {
+  const user = await getSessionUser()
+  if (!['ANALYST', 'ADMIN'].includes(user.role)) {
+    throw new Error("Unauthorized: Only Analysts or Admins can manage reports")
+  }
+
+  return user
 }
 
 function validateFieldValue(
@@ -97,7 +106,7 @@ async function getValidatedReportPayload(data: ReportEntryFormValues, requireReq
   }
 }
 
-async function assertEditableReport(reportId: string, analystId: string) {
+async function assertEditableReport(reportId: string, user: { id: string; role: string }) {
   const report = await prisma.report.findUnique({
     where: { id: reportId },
     select: { analystId: true, status: true },
@@ -107,7 +116,7 @@ async function assertEditableReport(reportId: string, analystId: string) {
     throw new Error("Report not found")
   }
 
-  if (report.analystId !== analystId) {
+  if (user.role !== 'ADMIN' && report.analystId !== user.id) {
     throw new Error("Unauthorized: You can only manage your own reports")
   }
 
@@ -117,12 +126,12 @@ async function assertEditableReport(reportId: string, analystId: string) {
 }
 
 export async function saveDraftReport(data: ReportEntryFormValues, reportId?: string) {
-  const analystId = await checkAnalyst()
+  const user = await checkAnalystOrAdmin()
   const payload = await getValidatedReportPayload(data, false)
 
   const report = await prisma.$transaction(async (tx) => {
     if (reportId) {
-      await assertEditableReport(reportId, analystId)
+      await assertEditableReport(reportId, user)
       await tx.reportValue.deleteMany({ where: { reportId } })
 
       return tx.report.update({
@@ -146,7 +155,7 @@ export async function saveDraftReport(data: ReportEntryFormValues, reportId?: st
       data: {
         paddyLotId: payload.paddyLotId,
         templateId: payload.templateId,
-        analystId,
+        analystId: user.id,
         status: "DRAFT",
         values: {
           create: payload.values.map((value) => ({
@@ -164,12 +173,12 @@ export async function saveDraftReport(data: ReportEntryFormValues, reportId?: st
 }
 
 export async function submitReportToQA(data: ReportEntryFormValues, reportId?: string) {
-  const analystId = await checkAnalyst()
+  const user = await checkAnalystOrAdmin()
   const payload = await getValidatedReportPayload(data, true)
 
   const report = await prisma.$transaction(async (tx) => {
     if (reportId) {
-      await assertEditableReport(reportId, analystId)
+      await assertEditableReport(reportId, user)
       await tx.reportValue.deleteMany({ where: { reportId } })
 
       return tx.report.update({
@@ -193,7 +202,7 @@ export async function submitReportToQA(data: ReportEntryFormValues, reportId?: s
       data: {
         paddyLotId: payload.paddyLotId,
         templateId: payload.templateId,
-        analystId,
+        analystId: user.id,
         status: "SUBMITTED",
         submissionDate: new Date(),
         values: {
@@ -212,10 +221,10 @@ export async function submitReportToQA(data: ReportEntryFormValues, reportId?: s
 }
 
 export async function getReports() {
-  const analystId = await checkAnalyst()
+  const user = await checkAnalystOrAdmin()
 
   return prisma.report.findMany({
-    where: { analystId },
+    where: user.role === 'ADMIN' ? undefined : { analystId: user.id },
     include: {
       paddyLot: {
         include: {
@@ -236,10 +245,10 @@ export async function getReports() {
 }
 
 export async function getReport(id: string) {
-  const analystId = await checkAnalyst()
+  const user = await checkAnalystOrAdmin()
 
   return prisma.report.findFirst({
-    where: { id, analystId },
+    where: user.role === 'ADMIN' ? { id } : { id, analystId: user.id },
     include: {
       paddyLot: {
         include: {
@@ -269,7 +278,7 @@ export async function getReport(id: string) {
 }
 
 export async function getReportEntryOptions() {
-  await checkAnalyst()
+  await checkAnalystOrAdmin()
 
   const [lots, templates] = await Promise.all([
     prisma.paddyLot.findMany({

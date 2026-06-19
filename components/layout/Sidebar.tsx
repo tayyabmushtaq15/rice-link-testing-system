@@ -34,13 +34,20 @@ export async function Sidebar() {
           </Link>
         )}
 
-        {session?.user?.role === "ANALYST" && (
+        {(isAdmin || session?.user?.role === "ANALYST") && (
           <Link href="/dashboard/reports" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
             <ClipboardList className="h-5 w-5" />
             Report Entries
           </Link>
         )}
-        
+
+        {(isAdmin || session?.user?.role === "QA") && (
+          <Link href="/dashboard/qa" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
+            <ClipboardList className="h-5 w-5" />
+            QA Dashboard
+          </Link>
+        )}
+
         {isAdmin && (
           <Link href="/dashboard/mills" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
             <Building2 className="h-5 w-5" />
