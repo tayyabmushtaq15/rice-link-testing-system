@@ -108,7 +108,8 @@ export async function getPaddyLots(search?: string, millId?: string) {
     include: {
       mill: {
         select: { name: true }
-      }
+      },
+      productionOutput: true
     },
     orderBy: { createdAt: "desc" }
   })
@@ -120,7 +121,8 @@ export async function getPaddyLot(id: string) {
   return await prisma.paddyLot.findUnique({
     where: { id },
     include: {
-      mill: true
+      mill: true,
+      productionOutput: true
     }
   })
 }

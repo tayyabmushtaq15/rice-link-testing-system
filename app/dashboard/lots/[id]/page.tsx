@@ -1,7 +1,10 @@
 import { getPaddyLot } from "@/actions/paddyLots"
+import { ProductionPdfActions } from "@/components/production/ProductionPdfActions"
+import { ProductionOutputForm } from "@/components/production/ProductionOutputForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { buildProductionPdfData } from "@/lib/productionPdf"
 import { FileText, ArrowLeft, Factory, User, Calendar, Settings, FileSearch, Scale, Droplets, CircleDollarSign } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -17,6 +20,13 @@ export default async function LotDetailPage({
   if (!lot) {
     notFound()
   }
+
+  const productionPdf = lot.productionOutput
+    ? buildProductionPdfData({
+        ...lot,
+        productionOutput: lot.productionOutput,
+      })
+    : null
 
   return (
     <div className="space-y-6">
@@ -38,9 +48,12 @@ export default async function LotDetailPage({
             </Badge>
           </div>
         </div>
-        <Link href={`/dashboard/lots/${lot.id}/edit`} className={buttonVariants({ variant: "outline" })}>
-          Edit Lot
-        </Link>
+        <div className="flex items-center gap-2">
+          {productionPdf && <ProductionPdfActions report={productionPdf} />}
+          <Link href={`/dashboard/lots/${lot.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+            Edit Lot
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -124,20 +137,14 @@ export default async function LotDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 border-dashed border-2">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Factory className="h-5 w-5 text-muted-foreground" />
-              Production Outputs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <p className="text-muted-foreground mb-4">No production data available for this lot.</p>
-              <Button variant="outline" disabled>View Production Output</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="md:col-span-2">
+          <ProductionOutputForm
+            paddyLotId={lot.id}
+            lotWeight={lot.weight}
+            purchaseRate={lot.purchaseRate}
+            initialData={lot.productionOutput}
+          />
+        </div>
 
       </div>
     </div>

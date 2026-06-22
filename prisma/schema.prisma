@@ -66,6 +66,35 @@ model PaddyLot {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   reports      Report[]
+  productionOutput ProductionOutput?
+}
+
+model ProductionOutput {
+  id                 String   @id @default(uuid())
+  paddyLotId         String   @unique
+  paddyLot           PaddyLot @relation(fields: [paddyLotId], references: [id], onDelete: Cascade)
+  paddyWeight        Float
+  rice               Float    @default(0)
+  brokenRice         Float    @default(0)
+  husk               Float    @default(0)
+  polish             Float    @default(0)
+  waste              Float    @default(0)
+  shortage           Float    @default(0)
+  laborCost          Float    @default(0)
+  electricityCost    Float    @default(0)
+  dryingCost         Float    @default(0)
+  packingCost        Float    @default(0)
+  transportCost      Float    @default(0)
+  loadingCost        Float    @default(0)
+  otherCost          Float    @default(0)
+  riceSaleRate       Float    @default(0)
+  brokenRiceSaleRate Float    @default(0)
+  huskSaleRate       Float    @default(0)
+  polishSaleRate     Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([paddyLotId])
 }
 
 enum FieldType {

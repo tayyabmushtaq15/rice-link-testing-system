@@ -3,6 +3,8 @@ import { notFound } from "next/navigation"
 import { ArrowLeft, ClipboardList, Pencil } from "lucide-react"
 
 import { getReport } from "@/actions/reports"
+import { ReportPdfActions } from "@/components/reports/ReportPdfActions"
+import type { ReportPdfData } from "@/components/reports/ReportPdfDocument"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +16,14 @@ function getStatusClass(status: string) {
   if (status === "APPROVED") return "bg-emerald-100 text-emerald-800 border-none"
   if (status === "REJECTED") return "bg-red-100 text-red-800 border-none"
   return ""
+}
+
+function formatReportNumber(id: string) {
+  return `REP-${id.slice(0, 8).toUpperCase()}`
+}
+
+function formatDate(value?: Date | null) {
+  return value ? value.toLocaleDateString() : "-"
 }
 
 export default async function ReportDetailPage({
@@ -31,6 +41,25 @@ export default async function ReportDetailPage({
   const valuesByFieldId = new Map(
     report.values.map((value) => [value.templateFieldId, value.value])
   )
+  const pdfReport: ReportPdfData = {
+    id: report.id,
+    reportNumber: formatReportNumber(report.id),
+    reportTitle: report.template.name,
+    partyName: report.paddyLot.supplierName,
+    variety: report.paddyLot.variety,
+    lotNumber: report.paddyLot.lotNumber,
+    millName: report.paddyLot.mill.name,
+    millOwnerName: report.paddyLot.mill.ownerName,
+    analyst: report.analyst.name || report.analyst.email,
+    qaApproval: report.approvedBy?.name || report.approvedBy?.email || "-",
+    approvedAt: formatDate(report.approvedAt),
+    submissionDate: formatDate(report.submissionDate),
+    results: report.template.fields.map((field) => ({
+      name: field.name,
+      type: field.type,
+      value: valuesByFieldId.get(field.id) || "-",
+    })),
+  }
 
   return (
     <div className="space-y-6">
@@ -53,6 +82,7 @@ export default async function ReportDetailPage({
             Edit Draft
           </Link>
         )}
+        {report.status === "APPROVED" && <ReportPdfActions report={pdfReport} />}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

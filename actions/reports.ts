@@ -268,6 +268,12 @@ export async function getReport(id: string) {
           email: true,
         },
       },
+      approvedBy: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
       values: {
         include: {
           templateField: true,
