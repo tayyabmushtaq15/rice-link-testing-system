@@ -2,19 +2,28 @@
 
 import React, { useState } from "react"
 
-export default function QAList({ reports }: { reports: any[] }) {
+type QAReport = {
+  id: string
+  template?: { name?: string }
+  paddyLot?: { lotNumber?: string }
+  analyst?: { name?: string; email?: string }
+  status?: string
+}
+
+export default function QAList({ reports }: { reports: QAReport[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  async function postAction(url: string, body: any) {
-    setLoadingId(body.reportId)
+  async function postAction(url: string, body: Record<string, unknown>) {
+    setLoadingId(String(body.reportId))
     try {
       const res = await fetch(url, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } })
       const data = await res.json()
       if (!data.ok) throw new Error(data.error || "Action failed")
       // reload the page to refresh server data
       window.location.reload()
-    } catch (err: any) {
-      alert(err.message || "Error")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Error"
+      alert(errorMessage)
     } finally {
       setLoadingId(null)
     }

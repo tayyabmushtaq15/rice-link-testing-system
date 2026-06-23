@@ -29,8 +29,14 @@ const formSchema = z.object({
 
 type MillFormValues = z.infer<typeof formSchema>
 
+type MillFormInitialData = Omit<Partial<MillFormValues>, "phone" | "email" | "address"> & {
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+}
+
 interface MillFormProps {
-  initialData?: any
+  initialData?: MillFormInitialData
   millId?: string
 }
 

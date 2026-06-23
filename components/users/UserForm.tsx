@@ -26,13 +26,14 @@ const userFormSchema = z.object({
 })
 
 type UserFormSchemaType = z.infer<typeof userFormSchema>
+type UserRole = UserFormSchemaType["role"]
 
 interface UserFormProps {
   initialData?: {
     id: string
     email: string
     name: string | null
-    role: string
+    role: UserRole
   }
 }
 
@@ -52,7 +53,7 @@ export function UserForm({ initialData }: UserFormProps) {
     defaultValues: {
       email: initialData?.email || "",
       name: initialData?.name || "",
-      role: (initialData?.role as any) || "ANALYST",
+      role: initialData?.role ?? "ANALYST",
       password: "",
     },
   })
@@ -69,7 +70,7 @@ export function UserForm({ initialData }: UserFormProps) {
         const updateData: UpdateUserFormValues = {
           email: data.email,
           name: data.name,
-          role: data.role as any,
+          role: data.role,
           ...(data.password && { password: data.password }),
         }
         await updateUser(initialData.id, updateData)
@@ -83,7 +84,7 @@ export function UserForm({ initialData }: UserFormProps) {
         const createData: UserFormValues = {
           email: data.email,
           name: data.name,
-          role: data.role as any,
+          role: data.role,
           password: data.password,
         }
         await createUser(createData)
@@ -91,8 +92,9 @@ export function UserForm({ initialData }: UserFormProps) {
 
       router.push("/dashboard/users")
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || "An error occurred")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred"
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -136,7 +138,7 @@ export function UserForm({ initialData }: UserFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(val) => setValue("role", val as any)}>
+            <Select value={role} onValueChange={(val) => setValue("role", val as UserRole)}>
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>

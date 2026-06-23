@@ -122,14 +122,11 @@ export async function updateUser(id: string, data: UpdateUserFormValues) {
   }
 
   // Hash new password if provided
-  const updateData: any = {
+  const updateData: UpdateUserFormValues = {
     email: parsedData.email,
     name: parsedData.name,
     role: parsedData.role,
-  }
-
-  if (parsedData.password) {
-    updateData.password = await bcrypt.hash(parsedData.password, 10)
+    ...(parsedData.password ? { password: await bcrypt.hash(parsedData.password, 10) } : {}),
   }
 
   const updatedUser = await prisma.user.update({

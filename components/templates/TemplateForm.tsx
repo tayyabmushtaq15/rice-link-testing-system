@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
@@ -50,8 +50,8 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<ReportTemplateFormValues>({
-    resolver: zodResolver(reportTemplateSchema),
+  const form = useForm<ReportTemplateFormValues, unknown, ReportTemplateFormValues>({
+    resolver: zodResolver(reportTemplateSchema) as Resolver<ReportTemplateFormValues, unknown, ReportTemplateFormValues>,
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",
