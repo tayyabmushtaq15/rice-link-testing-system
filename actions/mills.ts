@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
 
 const millSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -82,7 +83,7 @@ export async function getMills(search?: string) {
   // Let's protect the read action as well.
   await checkAdmin()
   
-  const whereClause: any = {
+  const whereClause: Prisma.MillWhereInput = {
     isActive: true
   }
   

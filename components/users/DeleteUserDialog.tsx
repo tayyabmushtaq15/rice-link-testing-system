@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { deleteUser } from "@/actions/users"
-import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -36,8 +35,9 @@ export function DeleteUserDialog({
       await deleteUser(userId)
       onOpenChange(false)
       router.refresh()
-    } catch (err: any) {
-      alert(err.message || "Failed to delete user")
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete user"
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }

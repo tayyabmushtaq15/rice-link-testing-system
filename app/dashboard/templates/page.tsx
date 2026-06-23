@@ -1,8 +1,8 @@
 import { getTemplates } from "@/actions/templates"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { FileText, Plus, Pencil, LayoutTemplate } from "lucide-react"
+import { Plus, Pencil, LayoutTemplate } from "lucide-react"
 import Link from "next/link"
 import { ToggleStatusButton } from "@/components/templates/ToggleStatusButton"
 
@@ -41,7 +41,7 @@ export default async function TemplatesPage() {
               {templates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No report templates found. Click "Create Template" to build one.
+                    No report templates found. Click &quot;Create Template&quot; to build one.
                   </TableCell>
                 </TableRow>
               ) : (

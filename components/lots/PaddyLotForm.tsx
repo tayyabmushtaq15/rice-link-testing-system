@@ -29,10 +29,7 @@ const formSchema = z.object({
   supplierName: z.string().min(2, "Supplier name must be at least 2 characters"),
   variety: z.string().min(2, "Variety must be at least 2 characters"),
   cropYear: z.string().min(4, "Crop year is required"),
-  purchaseDate: z.date({
-    required_error: "Purchase date is required",
-    invalid_type_error: "That's not a date!",
-  }),
+  purchaseDate: z.date(),
   weight: z.coerce.number().min(0.1, "Weight must be greater than 0"),
   moisture: z.coerce.number().min(0, "Moisture cannot be negative").max(100, "Moisture cannot exceed 100%"),
   purchaseRate: z.coerce.number().min(0, "Purchase rate cannot be negative"),
@@ -42,7 +39,7 @@ const formSchema = z.object({
 type PaddyLotFormValues = z.infer<typeof formSchema>
 
 interface PaddyLotFormProps {
-  initialData?: any
+  initialData?: Partial<PaddyLotFormValues> & { purchaseDate?: string | Date }
   lotId?: string
   mills: { id: string; name: string }[]
 }

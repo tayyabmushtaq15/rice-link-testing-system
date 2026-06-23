@@ -6,7 +6,8 @@ export async function POST(req: Request) {
     const body = await req.json()
     const updated = await returnToAnalyst(body)
     return NextResponse.json({ ok: true, report: updated })
-  } catch (err: any) {
-    return NextResponse.json({ ok: false, error: err.message }, { status: 400 })
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error"
+    return NextResponse.json({ ok: false, error: errorMessage }, { status: 400 })
   }
 }

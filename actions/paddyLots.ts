@@ -4,21 +4,26 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
 
 const paddyLotSchema = z.object({
   millId: z.string().min(1, "Mill is required"),
   supplierName: z.string().min(2, "Supplier name must be at least 2 characters"),
   variety: z.string().min(2, "Variety must be at least 2 characters"),
   cropYear: z.string().min(4, "Crop year is required"),
-  purchaseDate: z.date({
-    required_error: "Purchase date is required",
-    invalid_type_error: "That's not a date!",
+
+  purchaseDate: z.coerce.date({
+    error: "Purchase date is required",
   }),
+
   weight: z.number().min(0.1, "Weight must be greater than 0"),
-  moisture: z.number().min(0, "Moisture cannot be negative").max(100, "Moisture cannot exceed 100%"),
+  moisture: z.number()
+    .min(0, "Moisture cannot be negative")
+    .max(100, "Moisture cannot exceed 100%"),
   purchaseRate: z.number().min(0, "Purchase rate cannot be negative"),
+
   status: z.enum(["OPEN", "PROCESSING", "COMPLETED"]).default("OPEN"),
-})
+});
 
 export type PaddyLotFormValues = z.infer<typeof paddyLotSchema>
 
@@ -89,7 +94,7 @@ export async function updatePaddyLot(id: string, data: PaddyLotFormValues) {
 export async function getPaddyLots(search?: string, millId?: string) {
   await checkPermission()
   
-  const whereClause: any = {}
+  const whereClause: Prisma.PaddyLotWhereInput = {}
   
   if (millId && millId !== "all") {
     whereClause.millId = millId

@@ -1,7 +1,7 @@
 import { getMill } from "@/actions/mills"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, ArrowLeft, MapPin, Phone, Mail, User, Calendar } from "lucide-react"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
