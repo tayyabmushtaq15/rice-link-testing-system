@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
@@ -36,6 +36,11 @@ const formSchema = z.object({
   status: z.enum(["OPEN", "PROCESSING", "COMPLETED"]).default("OPEN"),
 })
 
+type PaddyLotFormInput = Omit<z.input<typeof formSchema>, "weight" | "moisture" | "purchaseRate"> & {
+  weight: number
+  moisture: number
+  purchaseRate: number
+}
 type PaddyLotFormValues = z.infer<typeof formSchema>
 
 interface PaddyLotFormProps {
@@ -48,14 +53,16 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<PaddyLotFormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<PaddyLotFormInput, unknown, PaddyLotFormValues>({
+    resolver: zodResolver(formSchema) as Resolver<PaddyLotFormInput, unknown, PaddyLotFormValues>,
     defaultValues: {
       millId: initialData?.millId || "",
       supplierName: initialData?.supplierName || "",
       variety: initialData?.variety || "",
       cropYear: initialData?.cropYear || new Date().getFullYear().toString(),
-      purchaseDate: initialData?.purchaseDate ? new Date(initialData.purchaseDate) : new Date(),
+      purchaseDate: initialData?.purchaseDate
+        ? new Date(initialData.purchaseDate)
+        : new Date(),
       weight: initialData?.weight || 0,
       moisture: initialData?.moisture || 0,
       purchaseRate: initialData?.purchaseRate || 0,
@@ -189,7 +196,6 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                           }
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -205,7 +211,12 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                   <FormItem>
                     <FormLabel>Weight (KG)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="0.0" {...field} />
+                      <Input
+                      type="number"
+                      step="0.1"
+                      value={field.value}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,7 +230,12 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                   <FormItem>
                     <FormLabel>Moisture (%)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="0.0" {...field} />
+                      <Input
+                      type="number"
+                      step="0.1"
+                      value={field.value}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -233,7 +249,12 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                   <FormItem>
                     <FormLabel>Purchase Rate</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <Input
+                      type="number"
+                      step="0.01"
+                      value={field.value}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

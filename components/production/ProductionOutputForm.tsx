@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { BarChart3, Banknote, PackageCheck, Recycle, Save, Trash2 } from "lucide-react"
 import { z } from "zod"
 
@@ -73,6 +73,46 @@ const formSchema = productionOutputSchema.extend({
   huskSaleRate: z.coerce.number().min(0, "Husk sale rate cannot be negative"),
   polishSaleRate: z.coerce.number().min(0, "Polish sale rate cannot be negative"),
 })
+
+type ProductionOutputFormInput = Omit<z.input<typeof formSchema>,
+  | "paddyWeight"
+  | "rice"
+  | "brokenRice"
+  | "husk"
+  | "polish"
+  | "waste"
+  | "shortage"
+  | "laborCost"
+  | "electricityCost"
+  | "dryingCost"
+  | "packingCost"
+  | "transportCost"
+  | "loadingCost"
+  | "otherCost"
+  | "riceSaleRate"
+  | "brokenRiceSaleRate"
+  | "huskSaleRate"
+  | "polishSaleRate"
+> & {
+  paddyWeight: number
+  rice: number
+  brokenRice: number
+  husk: number
+  polish: number
+  waste: number
+  shortage: number
+  laborCost: number
+  electricityCost: number
+  dryingCost: number
+  packingCost: number
+  transportCost: number
+  loadingCost: number
+  otherCost: number
+  riceSaleRate: number
+  brokenRiceSaleRate: number
+  huskSaleRate: number
+  polishSaleRate: number
+}
 
 type NumericField = {
   name: keyof ProductionOutputFormValues
@@ -144,8 +184,8 @@ export function ProductionOutputForm({
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<ProductionOutputFormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<ProductionOutputFormInput, unknown, ProductionOutputFormValues>({
+    resolver: zodResolver(formSchema) as Resolver<ProductionOutputFormInput, unknown, ProductionOutputFormValues>,
     defaultValues: {
       paddyWeight: initialData?.paddyWeight || lotWeight,
       rice: initialData?.rice || 0,

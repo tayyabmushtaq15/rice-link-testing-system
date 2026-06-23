@@ -17,6 +17,23 @@ import {
 import { calculateProductionSummary } from "@/lib/production"
 import { buildProductionPdfData } from "@/lib/productionPdf"
 
+type ProductionLot = Awaited<ReturnType<typeof getProductionLots>>[number]
+
+type ProductionTotals = {
+  paddyWeight: number
+  rice: number
+  brokenRice: number
+  husk: number
+  polish: number
+  waste: number
+  shortage: number
+  saleableOutput: number
+  totalOutput: number
+  totalLotCost: number
+  expectedSaleValue: number
+  grossProfit: number
+}
+
 function formatPercent(value: number) {
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`
 }
@@ -52,11 +69,11 @@ function SummaryCard({
 }
 
 export default async function ProductionPage() {
-  const lots = await getProductionLots()
-  const completedLots = lots.filter((lot) => lot.productionOutput)
+  const lots: ProductionLot[] = await getProductionLots()
+  const completedLots = lots.filter((lot: ProductionLot) => lot.productionOutput)
 
-  const totals = completedLots.reduce(
-    (acc, lot) => {
+  const totals = completedLots.reduce<ProductionTotals>(
+    (acc: ProductionTotals, lot: ProductionLot) => {
       const output = lot.productionOutput
       if (!output) return acc
       const summary = calculateProductionSummary(output, lot.purchaseRate)
@@ -166,7 +183,7 @@ export default async function ProductionPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                lots.map((lot) => {
+                lots.map((lot: ProductionLot) => {
                   const output = lot.productionOutput
                   const lotSummary = output ? calculateProductionSummary(output, lot.purchaseRate) : null
                   const productionPdf = output
