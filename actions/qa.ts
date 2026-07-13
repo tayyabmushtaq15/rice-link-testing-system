@@ -16,11 +16,11 @@ async function getSessionUser() {
 
 async function checkQAOrAdmin() {
   const user = await getSessionUser()
-  if (!['QA', 'ADMIN'].includes(user.role)) {
-    throw new Error("Unauthorized: Only QA or Admin users can perform this action")
+  if (["QA", "ADMIN"].includes(user.role)) {
+    return user
   }
 
-  return user
+  throw new Error("Unauthorized: Only QA or Admin users can perform this action")
 }
 
 const approveSchema = z.object({
@@ -41,7 +41,11 @@ export async function getSubmittedReports() {
   await checkQAOrAdmin()
 
   return prisma.report.findMany({
-    where: { status: "SUBMITTED" },
+    where: {
+      status: {
+        in: ["SUBMITTED", "APPROVED", "REJECTED"],
+      },
+    },
     include: {
       paddyLot: { include: { mill: true } },
       template: { select: { name: true } },
@@ -103,7 +107,7 @@ export async function rejectReport(data: z.infer<typeof rejectSchema>) {
 }
 
 export async function returnToAnalyst(data: z.infer<typeof returnSchema>) {
-  const user = await checkQAOrAdmin()
+  await checkQAOrAdmin()
   const { reportId, note } = returnSchema.parse(data)
 
   const report = await prisma.report.findUnique({ where: { id: reportId } })

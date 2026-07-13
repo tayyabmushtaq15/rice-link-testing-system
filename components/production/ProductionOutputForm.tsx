@@ -280,7 +280,13 @@ export function ProductionOutputForm({
                     <FormItem>
                       <FormLabel>Paddy Weight (KG)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" min="0" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={field.value}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -315,7 +321,13 @@ export function ProductionOutputForm({
                         <FormItem>
                           <FormLabel>{outputField.label} (KG)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" min="0" {...field} />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -340,7 +352,13 @@ export function ProductionOutputForm({
                         <FormItem>
                           <FormLabel>{costField.label}</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" min="0" {...field} />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -365,7 +383,13 @@ export function ProductionOutputForm({
                         <FormItem>
                           <FormLabel>{saleRateField.label}</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" min="0" {...field} />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={field.value}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
