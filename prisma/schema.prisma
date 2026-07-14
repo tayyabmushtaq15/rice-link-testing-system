@@ -17,6 +17,7 @@ enum Role {
   ANALYST
   QA
   MILL_OWNER
+  FINANCE_MANAGER
 }
 
 model User {
@@ -29,6 +30,97 @@ model User {
   updatedAt       DateTime @updatedAt
   reports         Report[]
   approvedReports Report[] @relation("ReportApprovedBy")
+  financeExpenses Expense[] @relation("ExpenseCreatedBy")
+  financeIncomes  Income[]  @relation("IncomeCreatedBy")
+}
+
+model ExpenseCategory {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  expenses    Expense[]
+  budgets     Budget[]
+}
+
+model Income {
+  id              String   @id @default(uuid())
+  transactionNo   String   @unique
+  date            DateTime
+  source          String
+  description     String?
+  amount          Float
+  paymentMethod   String
+  referenceNumber String?
+  notes           String?
+  createdById     String
+  createdBy       User     @relation("IncomeCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Expense {
+  id              String           @id @default(uuid())
+  transactionNo   String           @unique
+  date            DateTime
+  categoryId      String
+  category        ExpenseCategory  @relation(fields: [categoryId], references: [id])
+  vendorName      String?
+  description     String?
+  amount          Float
+  paymentMethod   String
+  invoiceNumber   String?
+  attachment      String?
+  notes           String?
+  createdById     String
+  createdBy       User             @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  isDeleted       Boolean          @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Employee {
+  id            String   @id @default(uuid())
+  name          String
+  department    String
+  designation   String
+  basicSalary   Float
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  salaries      Salary[]
+}
+
+model Salary {
+  id            String   @id @default(uuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  month         String
+  year          Int
+  basicSalary   Float
+  allowances    Float    @default(0)
+  deductions    Float    @default(0)
+  bonus         Float    @default(0)
+  overtime      Float    @default(0)
+  netSalary     Float
+  paymentStatus String   @default("PENDING")
+  paymentDate   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Budget {
+  id            String           @id @default(uuid())
+  categoryId    String
+  category      ExpenseCategory  @relation(fields: [categoryId], references: [id])
+  month         String
+  year          Int
+  budgetAmount  Float
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
 model Mill {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, Users, FileText, Settings, Factory, Building2, ClipboardList } from "lucide-react"
+import { Home, Users, FileText, Settings, Factory, Building2, ClipboardList, Wallet, ChevronRight } from "lucide-react"
 import { auth } from "@/auth"
 
 export async function Sidebar() {
@@ -60,6 +60,41 @@ export async function Sidebar() {
             <FileText className="h-5 w-5" />
             Report Templates
           </Link>
+        )}
+
+        {(isAdmin || session?.user?.role === "FINANCE_MANAGER") && (
+          <details className="group rounded-md">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">
+              <span className="flex items-center gap-3">
+                <Wallet className="h-5 w-5" />
+                Finance
+              </span>
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            </summary>
+            <div className="ml-6 mt-1 flex flex-col gap-1 border-l border-slate-700 pl-3 py-1">
+              <Link href="/dashboard/finance" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Overview
+              </Link>
+              <Link href="/dashboard/finance/income" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Income
+              </Link>
+              <Link href="/dashboard/finance/expenses" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Expenses
+              </Link>
+              <Link href="/dashboard/finance/categories" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Categories
+              </Link>
+              <Link href="/dashboard/finance/salaries" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Salaries
+              </Link>
+              <Link href="/dashboard/finance/budgets" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Budgets
+              </Link>
+              <Link href="/dashboard/finance/reports" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Reports
+              </Link>
+            </div>
+          </details>
         )}
 
         <Link href="/dashboard/users" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 transition-colors">

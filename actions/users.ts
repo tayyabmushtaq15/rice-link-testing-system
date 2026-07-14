@@ -9,7 +9,7 @@ import { z } from "zod"
 const userSchema = z.object({
   email: z.string().email("Invalid email"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  role: z.enum(["ADMIN", "ANALYST", "QA", "MILL_OWNER"]),
+  role: z.enum(["ADMIN", "ANALYST", "QA", "MILL_OWNER", "FINANCE_MANAGER"]),
 })
 
 const createUserSchema = userSchema.extend({

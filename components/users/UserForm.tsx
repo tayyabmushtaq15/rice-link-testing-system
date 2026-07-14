@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 const userFormSchema = z.object({
   email: z.string().email("Invalid email"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  role: z.enum(["ADMIN", "ANALYST", "QA", "MILL_OWNER"]),
+  role: z.enum(["ADMIN", "ANALYST", "QA", "MILL_OWNER", "FINANCE_MANAGER"]),
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
 })
 
@@ -147,6 +147,7 @@ export function UserForm({ initialData }: UserFormProps) {
                 <SelectItem value="ANALYST">Analyst</SelectItem>
                 <SelectItem value="QA">QA</SelectItem>
                 <SelectItem value="MILL_OWNER">Mill Owner</SelectItem>
+                <SelectItem value="FINANCE_MANAGER">Finance Manager</SelectItem>
               </SelectContent>
             </Select>
             {errors.role && <p className="text-sm text-red-600">{errors.role.message}</p>}
