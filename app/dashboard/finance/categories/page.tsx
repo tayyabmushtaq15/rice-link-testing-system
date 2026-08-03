@@ -5,13 +5,11 @@ import { getCategories } from "@/actions/finance/categories"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { CategoryTable } from "@/components/finance/categories/CategoryTable"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
 
 export default async function FinanceCategoriesPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: Promise<{ search?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -20,7 +18,8 @@ export default async function FinanceCategoriesPage({
     redirect("/dashboard")
   }
 
-  const categories = await getCategories(searchParams.search)
+  const params = await searchParams
+  const categories = await getCategories(params.search)
 
   return (
     <div className="space-y-6">

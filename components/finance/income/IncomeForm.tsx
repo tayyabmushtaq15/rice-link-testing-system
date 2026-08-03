@@ -34,6 +34,7 @@ const formSchema = z.object({
   paymentMethod: z.string().min(1, "Payment method is required"),
   referenceNumber: z.string().max(100, "Reference number must be less than 100 characters").optional().or(z.literal("")),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")),
+  paddyLotId: z.string().optional().or(z.literal("")),
 })
 
 type IncomeFormValues = z.infer<typeof formSchema>
@@ -41,11 +42,13 @@ type IncomeFormValues = z.infer<typeof formSchema>
 type IncomeFormInitialData = Partial<IncomeFormValues> & {
   id?: string
   transactionNo?: string
+  paddyLotId?: string | null
 }
 
 interface IncomeFormProps {
   initialData?: IncomeFormInitialData
   incomeId?: string
+  lots?: Array<{ id: string; lotNumber: string; supplierName: string }>
 }
 
 const paymentMethods = [
@@ -58,21 +61,22 @@ const paymentMethods = [
   "Other",
 ]
 
-export function IncomeForm({ initialData, incomeId }: IncomeFormProps) {
+export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string>("")
 
   const form = useForm<IncomeFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as never,
     defaultValues: {
       date: initialData?.date || new Date(),
       source: initialData?.source || "",
       description: initialData?.description || "",
-      amount: initialData?.amount || undefined,
+      amount: initialData?.amount ?? 0,
       paymentMethod: initialData?.paymentMethod || "",
       referenceNumber: initialData?.referenceNumber || "",
       notes: initialData?.notes || "",
+      paddyLotId: initialData?.paddyLotId || "",
     },
   })
 
@@ -154,7 +158,18 @@ export function IncomeForm({ initialData, incomeId }: IncomeFormProps) {
                 <FormItem>
                   <FormLabel>Amount (PKR) *</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      step="0.01"
+                      value={field.value === 0 ? "" : field.value}
+                      onChange={(e) =>
+                        field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                      }
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -167,7 +182,10 @@ export function IncomeForm({ initialData, incomeId }: IncomeFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Payment Method *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => field.onChange(value ?? "")}
+                    value={field.value || null}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select payment method" />
@@ -213,6 +231,35 @@ export function IncomeForm({ initialData, incomeId }: IncomeFormProps) {
                   <FormControl>
                     <Input placeholder="e.g., Invoice #123, Cheque #456" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="paddyLotId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Linked Paddy Lot (optional)</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                    value={field.value || "none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lot" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No lot link</SelectItem>
+                      {lots.map((lot) => (
+                        <SelectItem key={lot.id} value={lot.id}>
+                          {lot.lotNumber} — {lot.supplierName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

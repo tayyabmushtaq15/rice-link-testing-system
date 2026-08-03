@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/utils"
 export default async function FinanceIncomePage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: Promise<{ search?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -20,8 +20,8 @@ export default async function FinanceIncomePage({
     redirect("/dashboard")
   }
 
-  // Fetch income data
-  const { income: incomeList } = await getIncomeList(searchParams.search)
+  const params = await searchParams
+  const { income: incomeList } = await getIncomeList(params.search)
   const stats = await getIncomeStats()
 
   return (

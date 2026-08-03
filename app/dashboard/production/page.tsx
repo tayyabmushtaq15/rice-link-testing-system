@@ -1,8 +1,11 @@
 import Link from "next/link"
 import { BarChart3, Eye, Factory } from "lucide-react"
 
+import { auth } from "@/auth"
 import { getProductionLots } from "@/actions/production"
+import { isLotPostedToFinance } from "@/actions/finance/lotPosting"
 import { ProductionPdfActions } from "@/components/production/ProductionPdfActions"
+import { PostLotToFinanceButton } from "@/components/finance/PostLotToFinanceButton"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -69,8 +72,21 @@ function SummaryCard({
 }
 
 export default async function ProductionPage() {
+  const session = await auth()
+  const canPostFinance =
+    session?.user?.role === "ADMIN" || session?.user?.role === "FINANCE_MANAGER"
   const lots: ProductionLot[] = await getProductionLots()
   const completedLots = lots.filter((lot: ProductionLot) => lot.productionOutput)
+
+  const postingStatus = canPostFinance
+    ? await Promise.all(
+        completedLots.map(async (lot) => ({
+          id: lot.id,
+          posted: await isLotPostedToFinance(lot.id),
+        }))
+      )
+    : []
+  const postedMap = new Map(postingStatus.map((s) => [s.id, s.posted]))
 
   const totals = completedLots.reduce<ProductionTotals>(
     (acc: ProductionTotals, lot: ProductionLot) => {
@@ -226,8 +242,14 @@ export default async function ProductionPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2 items-center">
                           {productionPdf && <ProductionPdfActions report={productionPdf} compact />}
+                          {canPostFinance && output && (
+                            <PostLotToFinanceButton
+                              paddyLotId={lot.id}
+                              alreadyPosted={postedMap.get(lot.id) || false}
+                            />
+                          )}
                           <Link
                             href={`/dashboard/lots/${lot.id}`}
                             className={buttonVariants({ variant: "ghost", size: "icon" })}

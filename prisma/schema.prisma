@@ -46,8 +46,8 @@ model ExpenseCategory {
 }
 
 model Income {
-  id              String   @id @default(uuid())
-  transactionNo   String   @unique
+  id              String    @id @default(uuid())
+  transactionNo   String    @unique
   date            DateTime
   source          String
   description     String?
@@ -55,10 +55,17 @@ model Income {
   paymentMethod   String
   referenceNumber String?
   notes           String?
+  paddyLotId      String?
+  paddyLot        PaddyLot? @relation(fields: [paddyLotId], references: [id], onDelete: SetNull)
+  sourceType      String?
+  sourceId        String?
   createdById     String
-  createdBy       User     @relation("IncomeCreatedBy", fields: [createdById], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdBy       User      @relation("IncomeCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([sourceType, sourceId])
+  @@index([paddyLotId])
 }
 
 model Expense {
@@ -74,12 +81,22 @@ model Expense {
   invoiceNumber   String?
   attachment      String?
   notes           String?
+  paddyLotId      String?
+  paddyLot        PaddyLot?        @relation(fields: [paddyLotId], references: [id], onDelete: SetNull)
+  employeeId      String?
+  employee        Employee?        @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  sourceType      String?
+  sourceId        String?
   createdById     String
   createdBy       User             @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
   isDeleted       Boolean          @default(false)
   deletedAt       DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+
+  @@unique([sourceType, sourceId])
+  @@index([paddyLotId])
+  @@index([employeeId])
 }
 
 model Employee {
@@ -92,6 +109,7 @@ model Employee {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   salaries      Salary[]
+  expenses      Expense[]
 }
 
 model Salary {
@@ -121,6 +139,8 @@ model Budget {
   budgetAmount  Float
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+
+  @@unique([categoryId, month, year])
 }
 
 model Mill {
@@ -159,6 +179,8 @@ model PaddyLot {
   updatedAt    DateTime  @updatedAt
   reports      Report[]
   productionOutput ProductionOutput?
+  financeIncomes   Income[]
+  financeExpenses  Expense[]
 }
 
 model ProductionOutput {
