@@ -84,6 +84,9 @@ export async function Sidebar() {
               <Link href="/dashboard/finance/categories" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
                 Categories
               </Link>
+              <Link href="/dashboard/finance/employees" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
+                Employees
+              </Link>
               <Link href="/dashboard/finance/salaries" className="rounded-md px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">
                 Salaries
               </Link>

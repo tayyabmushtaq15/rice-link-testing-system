@@ -16,6 +16,8 @@ const expenseSchema = z.object({
   invoiceNumber: z.string().max(100, "Invoice number must be less than 100 characters").optional().or(z.literal("")).nullable(),
   attachment: z.string().max(500, "Attachment URL must be less than 500 characters").optional().or(z.literal("")).nullable(),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")).nullable(),
+  paddyLotId: z.string().optional().or(z.literal("")).nullable(),
+  employeeId: z.string().optional().or(z.literal("")).nullable(),
 })
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>
@@ -155,6 +157,8 @@ export async function createExpense(data: ExpenseFormValues) {
       invoiceNumber: parsedData.invoiceNumber || null,
       attachment: parsedData.attachment || null,
       notes: parsedData.notes || null,
+      paddyLotId: parsedData.paddyLotId || null,
+      employeeId: parsedData.employeeId || null,
       createdById: userId,
     },
     include: {
@@ -162,10 +166,13 @@ export async function createExpense(data: ExpenseFormValues) {
       createdBy: {
         select: { name: true, email: true },
       },
+      paddyLot: { select: { id: true, lotNumber: true } },
+      employee: { select: { id: true, name: true, basicSalary: true } },
     },
   })
 
   revalidatePath("/dashboard/finance/expenses")
+  revalidatePath("/dashboard/finance")
   return expense
 }
 
@@ -199,17 +206,22 @@ export async function updateExpense(id: string, data: ExpenseFormValues) {
       invoiceNumber: parsedData.invoiceNumber || null,
       attachment: parsedData.attachment || null,
       notes: parsedData.notes || null,
+      paddyLotId: parsedData.paddyLotId || null,
+      employeeId: parsedData.employeeId || null,
     },
     include: {
       category: true,
       createdBy: {
         select: { name: true, email: true },
       },
+      paddyLot: { select: { id: true, lotNumber: true } },
+      employee: { select: { id: true, name: true, basicSalary: true } },
     },
   })
 
   revalidatePath("/dashboard/finance/expenses")
   revalidatePath(`/dashboard/finance/expenses/${id}/edit`)
+  revalidatePath("/dashboard/finance")
   return expense
 }
 

@@ -39,7 +39,18 @@ async function main() {
     },
   })
 
-  console.log({ admin, analyst, qa })
+  const finance = await prisma.user.upsert({
+    where: { email: 'finance@example.com' },
+    update: {},
+    create: {
+      email: 'finance@example.com',
+      password: passwordHash,
+      name: 'Finance Manager',
+      role: 'FINANCE_MANAGER',
+    },
+  })
+
+  console.log({ admin, analyst, qa, finance })
 }
 
 main()

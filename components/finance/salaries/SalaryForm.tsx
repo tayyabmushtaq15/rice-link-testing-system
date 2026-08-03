@@ -76,7 +76,7 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
   const [netSalary, setNetSalary] = useState(0)
 
   const form = useForm<SalaryFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as never,
     defaultValues: {
       employeeId: initialData?.employee?.id || initialData?.employeeId || "",
       month: initialData?.month || new Date().toISOString().slice(5, 7),
@@ -140,7 +140,17 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Employee *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => {
+                      const next = value ?? ""
+                      field.onChange(next)
+                      const emp = employees.find((e) => e.id === next)
+                      if (emp) {
+                        form.setValue("basicSalary", emp.basicSalary)
+                      }
+                    }}
+                    value={field.value || null}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select employee" />
@@ -149,7 +159,7 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <SelectContent>
                       {employees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
-                          {emp.name}
+                          {emp.name} — basic {emp.basicSalary.toLocaleString()} PKR
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -166,7 +176,10 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Month *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ?? "")}
+                      value={field.value || null}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select month" />
@@ -192,7 +205,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                   <FormItem>
                     <FormLabel>Year *</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input
+                        type="number"
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === "" ? new Date().getFullYear() : Number(e.target.value)
+                          )
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,7 +229,10 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Status *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ?? "PENDING")}
+                      value={field.value || null}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -230,7 +257,22 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                   <FormItem>
                     <FormLabel>Payment Date *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input
+                        type="date"
+                        value={
+                          field.value instanceof Date
+                            ? field.value.toISOString().split("T")[0]
+                            : typeof field.value === "string"
+                              ? field.value
+                              : ""
+                        }
+                        onChange={(e) =>
+                          field.onChange(e.target.value ? new Date(e.target.value) : "")
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,7 +290,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <FormItem>
                       <FormLabel>Basic Salary *</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          step="0.01"
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -262,7 +315,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <FormItem>
                       <FormLabel>Allowances</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          step="0.01"
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -276,7 +340,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <FormItem>
                       <FormLabel>Bonus</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          step="0.01"
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -290,7 +365,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <FormItem>
                       <FormLabel>Overtime</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          step="0.01"
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -304,7 +390,18 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                     <FormItem>
                       <FormLabel>Deductions</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" step="0.01" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          step="0.01"
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

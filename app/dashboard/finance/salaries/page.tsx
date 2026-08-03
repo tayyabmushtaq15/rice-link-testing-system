@@ -26,12 +26,17 @@ export default async function FinanceSalariesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Salary Management</h1>
           <p className="text-sm text-muted-foreground">Record and manage employee payroll.</p>
         </div>
-        <Link href="/dashboard/finance/salaries/new">
-          <Button className="bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Salary Record
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/dashboard/finance/employees">
+            <Button variant="outline">Manage Employees</Button>
+          </Link>
+          <Link href="/dashboard/finance/salaries/new">
+            <Button className="bg-emerald-600 hover:bg-emerald-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Salary Record
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils"
 export default async function FinanceExpensesPage({
   searchParams,
 }: {
-  searchParams: { search?: string; category?: string }
+  searchParams: Promise<{ search?: string; category?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -21,10 +21,10 @@ export default async function FinanceExpensesPage({
     redirect("/dashboard")
   }
 
-  // Fetch expense data
+  const params = await searchParams
   const { expenses: expenseList } = await getExpenseList(
-    searchParams.search,
-    searchParams.category
+    params.search,
+    params.category
   )
   const stats = await getExpenseStats()
   const categories = await getAllCategories(false)

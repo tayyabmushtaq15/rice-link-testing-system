@@ -1,10 +1,15 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getFinanceReportsBundle } from "@/actions/finance/reports"
+import { FinanceReportsPanels } from "@/components/finance/reports/FinanceReportsPanels"
 import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
+import { getCurrentMonthYear, MONTHS } from "@/lib/finance"
 
-export default async function FinanceReportsPage() {
+export default async function FinanceReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string; year?: string }>
+}) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -12,27 +17,55 @@ export default async function FinanceReportsPage() {
     redirect("/dashboard")
   }
 
+  const params = await searchParams
+  const current = getCurrentMonthYear()
+  const month =
+    params.month && MONTHS.includes(params.month as (typeof MONTHS)[number])
+      ? params.month
+      : current.month
+  const year = params.year ? Number(params.year) : current.year
+
+  const data = await getFinanceReportsBundle(month, year)
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Finance Reports</h1>
-          <p className="text-sm text-muted-foreground">Generate daily, monthly, salary, and profitability reports.</p>
-        </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700">
-          <Download className="mr-2 h-4 w-4" />
-          Export Report
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Finance Reports</h1>
+        <p className="text-sm text-muted-foreground">
+          Monthly P&amp;L, salaries, budgets, and lot profitability with CSV export.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Report types</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Financial reporting features will be expanded with export support in the next phase.</p>
-        </CardContent>
-      </Card>
+      <form className="flex flex-wrap gap-3 items-end">
+        <div>
+          <label className="text-xs text-muted-foreground">Month</label>
+          <select
+            name="month"
+            defaultValue={month}
+            className="mt-1 flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+          >
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Year</label>
+          <input
+            type="number"
+            name="year"
+            defaultValue={year}
+            className="mt-1 flex h-9 w-28 rounded-md border border-input bg-transparent px-3 text-sm"
+          />
+        </div>
+        <Button type="submit" variant="outline">
+          Apply
+        </Button>
+      </form>
+
+      <FinanceReportsPanels data={data} month={month} year={year} />
     </div>
   )
 }

@@ -15,6 +15,7 @@ const incomeSchema = z.object({
   paymentMethod: z.string().min(1, "Payment method is required"),
   referenceNumber: z.string().max(100, "Reference number must be less than 100 characters").optional().or(z.literal("")).nullable(),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")).nullable(),
+  paddyLotId: z.string().optional().or(z.literal("")).nullable(),
 })
 
 export type IncomeFormValues = z.infer<typeof incomeSchema>
@@ -140,16 +141,19 @@ export async function createIncome(data: IncomeFormValues) {
       paymentMethod: parsedData.paymentMethod,
       referenceNumber: parsedData.referenceNumber || null,
       notes: parsedData.notes || null,
+      paddyLotId: parsedData.paddyLotId || null,
       createdById: userId,
     },
     include: {
       createdBy: {
         select: { name: true, email: true },
       },
+      paddyLot: { select: { id: true, lotNumber: true } },
     },
   })
 
   revalidatePath("/dashboard/finance/income")
+  revalidatePath("/dashboard/finance")
   return income
 }
 
@@ -181,16 +185,19 @@ export async function updateIncome(id: string, data: IncomeFormValues) {
       paymentMethod: parsedData.paymentMethod,
       referenceNumber: parsedData.referenceNumber || null,
       notes: parsedData.notes || null,
+      paddyLotId: parsedData.paddyLotId || null,
     },
     include: {
       createdBy: {
         select: { name: true, email: true },
       },
+      paddyLot: { select: { id: true, lotNumber: true } },
     },
   })
 
   revalidatePath("/dashboard/finance/income")
   revalidatePath(`/dashboard/finance/income/${id}/edit`)
+  revalidatePath("/dashboard/finance")
   return income
 }
 
