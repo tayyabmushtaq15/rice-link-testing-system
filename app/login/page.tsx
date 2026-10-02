@@ -1,10 +1,17 @@
+import { AuthError } from "next-auth"
+import { redirect } from "next/navigation"
 import { signIn } from "@/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Factory } from "lucide-react"
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg border">
@@ -19,10 +26,20 @@ export default function LoginPage() {
         <form
           action={async (formData) => {
             "use server"
-            await signIn("credentials", formData)
+            try {
+              await signIn("credentials", formData)
+            } catch (err) {
+              if (err instanceof AuthError) redirect("/login?error=invalid")
+              throw err
+            }
           }}
           className="space-y-4"
         >
+          {error && (
+            <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+              Invalid email or password.
+            </p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required placeholder="Enter your email" />
