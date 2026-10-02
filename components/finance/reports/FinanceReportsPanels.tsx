@@ -107,7 +107,7 @@ export function FinanceReportsPanels({ data, month, year }: FinanceReportsPanels
                   spent: r.spent,
                   remaining: r.remaining,
                   utilizationPercent: r.utilizationPercent,
-                }))
+                })),
               )
             }
           >
@@ -134,9 +134,7 @@ export function FinanceReportsPanels({ data, month, year }: FinanceReportsPanels
                     <TableCell>{row.categoryName}</TableCell>
                     <TableCell className="text-right">{formatCurrency(row.budgetAmount)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(row.spent)}</TableCell>
-                    <TableCell
-                      className={`text-right ${row.isOverspent ? "text-rose-600" : ""}`}
-                    >
+                    <TableCell className={`text-right ${row.isOverspent ? "text-rose-600" : ""}`}>
                       {formatCurrency(row.remaining)}
                     </TableCell>
                   </TableRow>
@@ -163,7 +161,7 @@ export function FinanceReportsPanels({ data, month, year }: FinanceReportsPanels
                   year: s.year,
                   netSalary: s.netSalary,
                   status: s.paymentStatus,
-                }))
+                })),
               )
             }
           >
@@ -212,7 +210,7 @@ export function FinanceReportsPanels({ data, month, year }: FinanceReportsPanels
                   grossProfit: l.grossProfit,
                   marginPercent: l.profitMarginPercent,
                   posted: l.postedToFinance ? "Yes" : "No",
-                }))
+                })),
               )
             }
           >
@@ -261,9 +259,7 @@ export function FinanceReportsPanels({ data, month, year }: FinanceReportsPanels
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {!lot.postedToFinance && (
-                          <PostLotToFinanceButton paddyLotId={lot.lotId} />
-                        )}
+                        {!lot.postedToFinance && <PostLotToFinanceButton paddyLotId={lot.lotId} />}
                       </TableCell>
                     </TableRow>
                   ))}

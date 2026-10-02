@@ -17,7 +17,9 @@ export default async function NewIncomePage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Record Income</h1>
-        <p className="text-sm text-muted-foreground">Add a new income transaction to your financial records.</p>
+        <p className="text-sm text-muted-foreground">
+          Add a new income transaction to your financial records.
+        </p>
       </div>
       <IncomeForm lots={lots} />
     </div>

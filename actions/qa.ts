@@ -4,6 +4,19 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+import type { Prisma } from "@prisma/client"
+
+const QA_SORT_KEYS = ["submitted", "status"] as const
+type QASortKey = (typeof QA_SORT_KEYS)[number]
+
+function qaOrderBy(sort: QASortKey, dir: SortDir) {
+  const primary: Record<QASortKey, Prisma.ReportOrderByWithRelationInput> = {
+    submitted: { submissionDate: dir },
+    status: { status: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 async function getSessionUser() {
   const session = await auth()
@@ -37,23 +50,54 @@ const returnSchema = z.object({
   note: z.string().optional(),
 })
 
-export async function getSubmittedReports() {
+export async function getSubmittedReports(params: { page?: string; sort?: string; dir?: string } = {}) {
   await checkQAOrAdmin()
 
-  return prisma.report.findMany({
-    where: {
-      status: {
-        in: ["SUBMITTED", "APPROVED", "REJECTED"],
-      },
+  const whereClause: Prisma.ReportWhereInput = {
+    status: {
+      in: ["SUBMITTED", "APPROVED", "REJECTED"],
     },
-    include: {
-      paddyLot: { include: { mill: true } },
-      template: { select: { name: true } },
-      analyst: { select: { id: true, name: true, email: true } },
-      values: { include: { templateField: true } },
-    },
-    orderBy: { submissionDate: "desc" },
+  }
+
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: QA_SORT_KEYS,
+    defaultSort: "submitted",
+    defaultDir: "desc",
   })
+  const orderBy = qaOrderBy(sort, dir)
+
+  // Status counts reflect the WHOLE filtered dataset (not just the current page), for the QA
+  // dashboard's stat cards — computed from a groupBy alongside the paginated list.
+  const [result, statusGroups] = await Promise.all([
+    paginate(
+      () => prisma.report.count({ where: whereClause }),
+      ({ skip, take }) =>
+        prisma.report.findMany({
+          where: whereClause,
+          include: {
+            paddyLot: { include: { mill: true } },
+            purchase: { select: { purchaseNo: true, supplier: { select: { name: true } } } },
+            productionBatch: { select: { batchNo: true } },
+            template: { select: { name: true } },
+            analyst: { select: { id: true, name: true, email: true } },
+            values: { include: { templateField: true } },
+          },
+          orderBy,
+          skip,
+          take,
+        }),
+      Number(params.page) || 1,
+    ),
+    prisma.report.groupBy({ by: ["status"], where: whereClause, _count: true }),
+  ])
+
+  const statusCounts = {
+    pending: statusGroups.find((g) => g.status === "SUBMITTED")?._count ?? 0,
+    approved: statusGroups.find((g) => g.status === "APPROVED")?._count ?? 0,
+    rejected: statusGroups.find((g) => g.status === "REJECTED")?._count ?? 0,
+  }
+
+  return { ...result, sort, dir, statusCounts }
 }
 
 export async function approveReport(data: z.infer<typeof approveSchema>) {
@@ -112,7 +156,8 @@ export async function returnToAnalyst(data: z.infer<typeof returnSchema>) {
 
   const report = await prisma.report.findUnique({ where: { id: reportId } })
   if (!report) throw new Error("Report not found")
-  if (report.status !== "SUBMITTED") throw new Error("Only submitted reports can be returned to analyst")
+  if (report.status !== "SUBMITTED")
+    throw new Error("Only submitted reports can be returned to analyst")
 
   const updated = await prisma.report.update({
     where: { id: reportId },

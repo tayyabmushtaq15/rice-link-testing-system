@@ -2,10 +2,7 @@
 
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import {
-  productionOutputSchema,
-  type ProductionOutputFormValues,
-} from "@/lib/production"
+import { productionOutputSchema, type ProductionOutputFormValues } from "@/lib/production"
 import { revalidatePath } from "next/cache"
 
 async function checkProductionPermission() {
@@ -15,10 +12,7 @@ async function checkProductionPermission() {
   }
 }
 
-export async function upsertProductionOutput(
-  paddyLotId: string,
-  data: ProductionOutputFormValues
-) {
+export async function upsertProductionOutput(paddyLotId: string, data: ProductionOutputFormValues) {
   await checkProductionPermission()
 
   const parsedData = productionOutputSchema.parse(data)

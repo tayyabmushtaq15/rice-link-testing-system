@@ -14,39 +14,38 @@ export async function getFinanceOverview(month?: string, year?: number) {
   const selectedYear = year || current.year
   const { startDate, endDate } = getMonthDateRange(selectedMonth, selectedYear)
 
-  const [incomeAgg, expenseAgg, recentIncomes, recentExpenses, budget, lots] =
-    await Promise.all([
-      prisma.income.aggregate({
-        where: { date: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      prisma.expense.aggregate({
-        where: { isDeleted: false, date: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      prisma.income.findMany({
-        where: { date: { gte: startDate, lte: endDate } },
-        orderBy: { date: "desc" },
-        take: 5,
-        select: {
-          id: true,
-          transactionNo: true,
-          date: true,
-          source: true,
-          amount: true,
-        },
-      }),
-      prisma.expense.findMany({
-        where: { isDeleted: false, date: { gte: startDate, lte: endDate } },
-        orderBy: { date: "desc" },
-        take: 5,
-        include: { category: { select: { name: true } } },
-      }),
-      getBudgetVsActual(selectedMonth, selectedYear),
-      getLotsFinancePostingStatus(),
-    ])
+  const [incomeAgg, expenseAgg, recentIncomes, recentExpenses, budget, lots] = await Promise.all([
+    prisma.income.aggregate({
+      where: { date: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.expense.aggregate({
+      where: { isDeleted: false, date: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.income.findMany({
+      where: { date: { gte: startDate, lte: endDate } },
+      orderBy: { date: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        transactionNo: true,
+        date: true,
+        source: true,
+        amount: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: { isDeleted: false, date: { gte: startDate, lte: endDate } },
+      orderBy: { date: "desc" },
+      take: 5,
+      include: { category: { select: { name: true } } },
+    }),
+    getBudgetVsActual(selectedMonth, selectedYear),
+    getLotsFinancePostingStatus(),
+  ])
 
   const totalIncome = incomeAgg._sum.amount || 0
   const totalExpenses = expenseAgg._sum.amount || 0

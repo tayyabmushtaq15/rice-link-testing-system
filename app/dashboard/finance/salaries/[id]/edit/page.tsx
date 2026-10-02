@@ -4,11 +4,7 @@ import { getSalaryById } from "@/actions/finance/salaries"
 import { getEmployees } from "@/actions/finance/employees"
 import { SalaryForm } from "@/components/finance/salaries/SalaryForm"
 
-export default async function EditSalaryPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditSalaryPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.role || !["ADMIN", "FINANCE_MANAGER"].includes(session.user.role as string)) {
     redirect("/dashboard")

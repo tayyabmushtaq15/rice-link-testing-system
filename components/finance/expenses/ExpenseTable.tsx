@@ -14,8 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
 import { Edit, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import type { SortDir } from "@/lib/listQuery"
 
 interface Expense {
   id: string
@@ -39,15 +42,36 @@ interface Expense {
 interface ExpenseTableProps {
   expenses: Expense[]
   onDelete?: () => void
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
 }
 
-export function ExpenseTable({ expenses, onDelete }: ExpenseTableProps) {
+export function ExpenseTable({
+  expenses,
+  onDelete,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: ExpenseTableProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expense record? This action cannot be undone.")) {
+    if (
+      !confirm("Are you sure you want to delete this expense record? This action cannot be undone.")
+    ) {
       return
     }
 
@@ -80,20 +104,47 @@ export function ExpenseTable({ expenses, onDelete }: ExpenseTableProps) {
         <CardTitle>Expense Records</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Transaction No</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <SortableTableHead
+                  label="Date"
+                  sortKey="date"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
+                <SortableTableHead
+                  label="Category"
+                  sortKey="category"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                />
+                <SortableTableHead
+                  label="Vendor"
+                  sortKey="vendor"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                />
+                <SortableTableHead
+                  label="Amount"
+                  sortKey="amount"
+                  className="text-right"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
                 <TableHead>Method</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
@@ -114,7 +165,9 @@ export function ExpenseTable({ expenses, onDelete }: ExpenseTableProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(expense.amount)}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(expense.amount)}
+                  </TableCell>
                   <TableCell className="text-sm">{expense.paymentMethod}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -138,6 +191,14 @@ export function ExpenseTable({ expenses, onDelete }: ExpenseTableProps) {
             </TableBody>
           </Table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+          basePath={basePath}
+          searchParams={searchParams}
+        />
       </CardContent>
     </Card>
   )

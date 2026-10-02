@@ -3,16 +3,9 @@ import { getMillsForDropdown, getPaddyLot } from "@/actions/paddyLots"
 import { FileText } from "lucide-react"
 import { notFound } from "next/navigation"
 
-export default async function EditLotPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditLotPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [lot, mills] = await Promise.all([
-    getPaddyLot(id),
-    getMillsForDropdown()
-  ])
+  const [lot, mills] = await Promise.all([getPaddyLot(id), getMillsForDropdown()])
 
   if (!lot) {
     notFound()

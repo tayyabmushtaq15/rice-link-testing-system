@@ -1,25 +1,39 @@
 import { getPaddyLots } from "@/actions/paddyLots"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Plus, Pencil, Eye } from "lucide-react"
 import Link from "next/link"
-import LotSearch from "./LotSearch"
+import { EntitySearch } from "@/components/ui/EntitySearch"
 
 export default async function LotsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ query?: string }>
+  searchParams: Promise<{ query?: string; page?: string; sort?: string; dir?: string }>
 }) {
-  const query = (await searchParams).query || ""
-  const lots = await getPaddyLots(query)
+  const params = await searchParams
+  const query = params.query || ""
+  const basePath = "/dashboard/lots"
+  const list = await getPaddyLots({ search: query, page: params.page, sort: params.sort, dir: params.dir })
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Paddy Lots</h1>
-        <Link href="/dashboard/lots/new" className={buttonVariants({ className: "bg-emerald-600 hover:bg-emerald-700" })}>
+        <Link
+          href="/dashboard/lots/new"
+          className={buttonVariants({ className: "bg-emerald-600 hover:bg-emerald-700" })}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Paddy Lot
         </Link>
@@ -33,7 +47,7 @@ export default async function LotsPage({
               Recent Lots
             </CardTitle>
             <div className="w-72">
-              <LotSearch initialQuery={query} />
+              <EntitySearch initialQuery={query} placeholder="Search lots..." />
             </div>
           </div>
         </CardHeader>
@@ -41,24 +55,46 @@ export default async function LotsPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Lot Number</TableHead>
+                <SortableTableHead
+                  label="Lot Number"
+                  sortKey="lotNumber"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                />
                 <TableHead>Mill</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead>Variety</TableHead>
-                <TableHead>Weight</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead
+                  label="Weight"
+                  sortKey="weight"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                  defaultDir="desc"
+                />
+                <SortableTableHead
+                  label="Status"
+                  sortKey="status"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lots.length === 0 ? (
+              {list.items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No paddy lots found.
                   </TableCell>
                 </TableRow>
               ) : (
-                lots.map((lot) => (
+                list.items.map((lot) => (
                   <TableRow key={lot.id}>
                     <TableCell className="font-medium text-emerald-700">
                       <Link href={`/dashboard/lots/${lot.id}`} className="hover:underline">
@@ -70,21 +106,35 @@ export default async function LotsPage({
                     <TableCell>{lot.variety}</TableCell>
                     <TableCell>{lot.weight} KG</TableCell>
                     <TableCell>
-                      <Badge variant={
-                        lot.status === "OPEN" ? "default" :
-                        lot.status === "PROCESSING" ? "secondary" : "outline"
-                      } className={
-                        lot.status === "OPEN" ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none" : ""
-                      }>
+                      <Badge
+                        variant={
+                          lot.status === "OPEN"
+                            ? "default"
+                            : lot.status === "PROCESSING"
+                              ? "secondary"
+                              : "outline"
+                        }
+                        className={
+                          lot.status === "OPEN"
+                            ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none"
+                            : ""
+                        }
+                      >
                         {lot.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/dashboard/lots/${lot.id}`} className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                        <Link
+                          href={`/dashboard/lots/${lot.id}`}
+                          className={buttonVariants({ variant: "ghost", size: "icon" })}
+                        >
                           <Eye className="h-4 w-4" />
                         </Link>
-                        <Link href={`/dashboard/lots/${lot.id}/edit`} className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                        <Link
+                          href={`/dashboard/lots/${lot.id}/edit`}
+                          className={buttonVariants({ variant: "ghost", size: "icon" })}
+                        >
                           <Pencil className="h-4 w-4 text-emerald-600" />
                         </Link>
                       </div>
@@ -94,6 +144,14 @@ export default async function LotsPage({
               )}
             </TableBody>
           </Table>
+          <Pagination
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+            totalPages={list.totalPages}
+            basePath={basePath}
+            searchParams={params}
+          />
         </CardContent>
       </Card>
     </div>

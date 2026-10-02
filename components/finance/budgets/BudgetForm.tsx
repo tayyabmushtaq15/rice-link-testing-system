@@ -84,9 +84,7 @@ export function BudgetForm({ initialData, budgetId, categories }: BudgetFormProp
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>
-            )}
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
             <FormField
               control={form.control}
@@ -140,25 +138,25 @@ export function BudgetForm({ initialData, budgetId, categories }: BudgetFormProp
               />
 
               <FormField
-              control={form.control}
-              name="year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Year</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      value={field.value ?? ""}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Year</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField
@@ -187,7 +185,11 @@ export function BudgetForm({ initialData, budgetId, categories }: BudgetFormProp
             />
 
             <div className="flex gap-3">
-              <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
                 {isSubmitting ? "Saving..." : initialData ? "Update Budget" : "Create Budget"}
               </Button>
               <Button

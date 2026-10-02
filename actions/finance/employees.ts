@@ -4,6 +4,21 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { checkFinanceAccess } from "./_shared"
+import type { Prisma } from "@prisma/client"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const EMPLOYEE_SORT_KEYS = ["name", "department", "designation", "basicSalary"] as const
+type EmployeeSortKey = (typeof EMPLOYEE_SORT_KEYS)[number]
+
+function employeeOrderBy(sort: EmployeeSortKey, dir: SortDir) {
+  const primary: Record<EmployeeSortKey, Prisma.EmployeeOrderByWithRelationInput> = {
+    name: { name: dir },
+    department: { department: dir },
+    designation: { designation: dir },
+    basicSalary: { basicSalary: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const employeeSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -11,6 +26,9 @@ const employeeSchema = z.object({
   designation: z.string().min(1, "Designation is required").max(100),
   basicSalary: z.coerce.number().positive("Basic salary must be greater than 0"),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+  phone: z.string().optional().or(z.literal("")),
+  cnic: z.string().optional().or(z.literal("")),
+  joiningDate: z.coerce.date().optional().or(z.literal("")),
 })
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>
@@ -30,26 +48,50 @@ export async function getEmployees(includeInactive = false) {
   })
 }
 
-export async function getEmployeeList(search?: string, includeInactive = true) {
+export async function getEmployeeList(params: {
+  search?: string
+  includeInactive?: boolean
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkFinanceAccess()
-  return prisma.employee.findMany({
-    where: {
-      ...(includeInactive ? {} : { status: "ACTIVE" }),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { department: { contains: search, mode: "insensitive" } },
-              { designation: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    },
-    include: {
-      _count: { select: { salaries: true, expenses: true } },
-    },
-    orderBy: { name: "asc" },
+  const { search, includeInactive = true } = params
+
+  const where: Prisma.EmployeeWhereInput = {
+    ...(includeInactive ? {} : { status: "ACTIVE" }),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { department: { contains: search, mode: "insensitive" } },
+            { designation: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  }
+
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: EMPLOYEE_SORT_KEYS,
+    defaultSort: "name",
+    defaultDir: "asc",
   })
+  const orderBy = employeeOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.employee.count({ where }),
+    ({ skip, take }) =>
+      prisma.employee.findMany({
+        where,
+        include: { _count: { select: { salaries: true, expenses: true } } },
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getEmployeeById(id: string) {
@@ -92,7 +134,8 @@ export async function getEmployeeStats() {
 export async function createEmployee(data: EmployeeFormValues) {
   await checkFinanceAccess()
   const parsed = employeeSchema.parse(data)
-  const employee = await prisma.employee.create({ data: parsed })
+  const joiningDate = parsed.joiningDate instanceof Date ? parsed.joiningDate : null
+  const employee = await prisma.employee.create({ data: { ...parsed, joiningDate } })
   revalidateEmployeePaths()
   return employee
 }
@@ -100,9 +143,10 @@ export async function createEmployee(data: EmployeeFormValues) {
 export async function updateEmployee(id: string, data: EmployeeFormValues) {
   await checkFinanceAccess()
   const parsed = employeeSchema.parse(data)
+  const joiningDate = parsed.joiningDate instanceof Date ? parsed.joiningDate : null
   const employee = await prisma.employee.update({
     where: { id },
-    data: parsed,
+    data: { ...parsed, joiningDate },
   })
   revalidateEmployeePaths()
   return employee

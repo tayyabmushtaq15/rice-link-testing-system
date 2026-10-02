@@ -3,14 +3,9 @@ import { redirect } from "next/navigation"
 import { getExpenseById } from "@/actions/finance/expenses"
 import { getAllCategories } from "@/actions/finance/categories"
 import { ExpenseForm } from "@/components/finance/expenses/ExpenseForm"
-import { getPaddyLotsForSelect } from "@/actions/finance/lotPosting"
 import { getEmployees } from "@/actions/finance/employees"
 
-export default async function EditExpensePage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -26,11 +21,7 @@ export default async function EditExpensePage({
     redirect("/dashboard/finance/expenses")
   }
 
-  const [categories, lots, employees] = await Promise.all([
-    getAllCategories(false),
-    getPaddyLotsForSelect(),
-    getEmployees(true),
-  ])
+  const [categories, employees] = await Promise.all([getAllCategories(false), getEmployees(true)])
 
   return (
     <div className="space-y-4">
@@ -57,7 +48,6 @@ export default async function EditExpensePage({
         }}
         expenseId={id}
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        lots={lots}
         employees={employees.map((e) => ({
           id: e.id,
           name: e.name,

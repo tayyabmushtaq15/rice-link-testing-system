@@ -20,12 +20,7 @@ interface DeleteUserDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function DeleteUserDialog({
-  userId,
-  userName,
-  open,
-  onOpenChange,
-}: DeleteUserDialogProps) {
+export function DeleteUserDialog({ userId, userName, open, onOpenChange }: DeleteUserDialogProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -49,15 +44,13 @@ export function DeleteUserDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete User</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <strong>{userName}</strong>? This action cannot be undone.
+            Are you sure you want to delete <strong>{userName}</strong>? This action cannot be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex gap-3 justify-end">
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDelete}
-            disabled={loading}
-          >
+          <AlertDialogAction onClick={handleDelete} disabled={loading}>
             {loading ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </div>

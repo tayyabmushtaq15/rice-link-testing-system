@@ -5,11 +5,21 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { FINANCE_SOURCE } from "@/lib/finance"
-import {
-  checkFinanceAccess,
-  ensureCategoryByName,
-  generateExpenseTransactionNo,
-} from "./_shared"
+import { checkFinanceAccess, ensureCategoryByName, generateExpenseTransactionNo } from "./_shared"
+import { syncExpenseJournalEntry } from "@/lib/ledger"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const SALARY_SORT_KEYS = ["period", "employee", "netSalary"] as const
+type SalarySortKey = (typeof SALARY_SORT_KEYS)[number]
+
+function salaryOrderBy(sort: SalarySortKey, dir: SortDir) {
+  const primary: Record<SalarySortKey, Prisma.SalaryOrderByWithRelationInput | Prisma.SalaryOrderByWithRelationInput[]> = {
+    period: [{ year: dir }, { month: dir }],
+    employee: { employee: { name: dir } },
+    netSalary: { netSalary: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const salarySchema = z.object({
   employeeId: z.string().min(1, "Employee is required"),
@@ -26,18 +36,21 @@ const salarySchema = z.object({
 
 export type SalaryFormValues = z.infer<typeof salarySchema>
 
-async function syncSalaryExpense(params: {
-  salaryId: string
-  employeeId: string
-  employeeName: string
-  month: string
-  year: number
-  netSalary: number
-  paymentStatus: string
-  paymentDate: Date | null
-  userId: string
-}) {
-  const existing = await prisma.expense.findUnique({
+async function syncSalaryExpense(
+  tx: Prisma.TransactionClient,
+  params: {
+    salaryId: string
+    employeeId: string
+    employeeName: string
+    month: string
+    year: number
+    netSalary: number
+    paymentStatus: string
+    paymentDate: Date | null
+    userId: string
+  },
+) {
+  const existing = await tx.expense.findUnique({
     where: {
       sourceType_sourceId: {
         sourceType: FINANCE_SOURCE.SALARY,
@@ -48,7 +61,7 @@ async function syncSalaryExpense(params: {
 
   if (params.paymentStatus === "PAID") {
     if (existing && !existing.isDeleted) {
-      await prisma.expense.update({
+      const updated = await tx.expense.update({
         where: { id: existing.id },
         data: {
           amount: params.netSalary,
@@ -58,11 +71,12 @@ async function syncSalaryExpense(params: {
           vendorName: params.employeeName,
         },
       })
+      await syncExpenseJournalEntry(tx, updated.id)
       return
     }
 
     if (existing?.isDeleted) {
-      await prisma.expense.update({
+      const updated = await tx.expense.update({
         where: { id: existing.id },
         data: {
           isDeleted: false,
@@ -74,11 +88,12 @@ async function syncSalaryExpense(params: {
           vendorName: params.employeeName,
         },
       })
+      await syncExpenseJournalEntry(tx, updated.id)
       return
     }
 
     const category = await ensureCategoryByName("Salaries")
-    await prisma.expense.create({
+    const created = await tx.expense.create({
       data: {
         transactionNo: await generateExpenseTransactionNo(),
         date: params.paymentDate || new Date(),
@@ -94,39 +109,51 @@ async function syncSalaryExpense(params: {
         createdById: params.userId,
       },
     })
+    await syncExpenseJournalEntry(tx, created.id)
     return
   }
 
   if (existing && !existing.isDeleted) {
-    await prisma.expense.update({
+    const updated = await tx.expense.update({
       where: { id: existing.id },
       data: { isDeleted: true, deletedAt: new Date() },
     })
+    await syncExpenseJournalEntry(tx, updated.id)
   }
 }
 
-export async function getSalaryList(
-  employeeId?: string,
-  limit = 50,
-  offset = 0
-) {
+export async function getSalaryList(params: {
+  employeeId?: string
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkFinanceAccess()
 
   const whereClause: Prisma.SalaryWhereInput = {}
-  if (employeeId) whereClause.employeeId = employeeId
+  if (params.employeeId) whereClause.employeeId = params.employeeId
 
-  const [salaries, total] = await Promise.all([
-    prisma.salary.findMany({
-      where: whereClause,
-      include: { employee: true },
-      orderBy: [{ year: "desc" }, { month: "desc" }],
-      take: limit,
-      skip: offset,
-    }),
-    prisma.salary.count({ where: whereClause }),
-  ])
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: SALARY_SORT_KEYS,
+    defaultSort: "period",
+    defaultDir: "desc",
+  })
+  const orderBy = salaryOrderBy(sort, dir)
 
-  return { salaries, total }
+  const result = await paginate(
+    () => prisma.salary.count({ where: whereClause }),
+    ({ skip, take }) =>
+      prisma.salary.findMany({
+        where: whereClause,
+        include: { employee: true },
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { salaries: result.items, ...result, sort, dir }
 }
 
 export async function getSalaryById(id: string) {
@@ -168,33 +195,36 @@ export async function createSalary(data: SalaryFormValues) {
         ? new Date()
         : null
 
-  const salary = await prisma.salary.create({
-    data: {
-      employeeId: parsedData.employeeId,
-      month: parsedData.month,
-      year: parsedData.year,
-      basicSalary: parsedData.basicSalary,
-      allowances: parsedData.allowances,
-      deductions: parsedData.deductions,
-      bonus: parsedData.bonus,
-      overtime: parsedData.overtime,
-      netSalary,
-      paymentStatus: parsedData.paymentStatus,
-      paymentDate,
-    },
-    include: { employee: true },
-  })
+  const salary = await prisma.$transaction(async (tx) => {
+    const created = await tx.salary.create({
+      data: {
+        employeeId: parsedData.employeeId,
+        month: parsedData.month,
+        year: parsedData.year,
+        basicSalary: parsedData.basicSalary,
+        allowances: parsedData.allowances,
+        deductions: parsedData.deductions,
+        bonus: parsedData.bonus,
+        overtime: parsedData.overtime,
+        netSalary,
+        paymentStatus: parsedData.paymentStatus,
+        paymentDate,
+      },
+      include: { employee: true },
+    })
 
-  await syncSalaryExpense({
-    salaryId: salary.id,
-    employeeId: salary.employeeId,
-    employeeName: salary.employee.name,
-    month: salary.month,
-    year: salary.year,
-    netSalary: salary.netSalary,
-    paymentStatus: salary.paymentStatus,
-    paymentDate: salary.paymentDate,
-    userId,
+    await syncSalaryExpense(tx, {
+      salaryId: created.id,
+      employeeId: created.employeeId,
+      employeeName: created.employee.name,
+      month: created.month,
+      year: created.year,
+      netSalary: created.netSalary,
+      paymentStatus: created.paymentStatus,
+      paymentDate: created.paymentDate,
+      userId,
+    })
+    return created
   })
 
   revalidatePath("/dashboard/finance/salaries")
@@ -223,32 +253,35 @@ export async function updateSalary(id: string, data: SalaryFormValues) {
         ? new Date()
         : null
 
-  const salary = await prisma.salary.update({
-    where: { id },
-    data: {
-      employeeId: parsedData.employeeId,
-      basicSalary: parsedData.basicSalary,
-      allowances: parsedData.allowances,
-      deductions: parsedData.deductions,
-      bonus: parsedData.bonus,
-      overtime: parsedData.overtime,
-      netSalary,
-      paymentStatus: parsedData.paymentStatus,
-      paymentDate,
-    },
-    include: { employee: true },
-  })
+  const salary = await prisma.$transaction(async (tx) => {
+    const updated = await tx.salary.update({
+      where: { id },
+      data: {
+        employeeId: parsedData.employeeId,
+        basicSalary: parsedData.basicSalary,
+        allowances: parsedData.allowances,
+        deductions: parsedData.deductions,
+        bonus: parsedData.bonus,
+        overtime: parsedData.overtime,
+        netSalary,
+        paymentStatus: parsedData.paymentStatus,
+        paymentDate,
+      },
+      include: { employee: true },
+    })
 
-  await syncSalaryExpense({
-    salaryId: salary.id,
-    employeeId: salary.employeeId,
-    employeeName: salary.employee.name,
-    month: salary.month,
-    year: salary.year,
-    netSalary: salary.netSalary,
-    paymentStatus: salary.paymentStatus,
-    paymentDate: salary.paymentDate,
-    userId,
+    await syncSalaryExpense(tx, {
+      salaryId: updated.id,
+      employeeId: updated.employeeId,
+      employeeName: updated.employee.name,
+      month: updated.month,
+      year: updated.year,
+      netSalary: updated.netSalary,
+      paymentStatus: updated.paymentStatus,
+      paymentDate: updated.paymentDate,
+      userId,
+    })
+    return updated
   })
 
   revalidatePath("/dashboard/finance/salaries")
@@ -260,22 +293,25 @@ export async function updateSalary(id: string, data: SalaryFormValues) {
 export async function deleteSalary(id: string) {
   await checkFinanceAccess()
 
-  const linked = await prisma.expense.findUnique({
-    where: {
-      sourceType_sourceId: {
-        sourceType: FINANCE_SOURCE.SALARY,
-        sourceId: id,
+  await prisma.$transaction(async (tx) => {
+    const linked = await tx.expense.findUnique({
+      where: {
+        sourceType_sourceId: {
+          sourceType: FINANCE_SOURCE.SALARY,
+          sourceId: id,
+        },
       },
-    },
-  })
-  if (linked && !linked.isDeleted) {
-    await prisma.expense.update({
-      where: { id: linked.id },
-      data: { isDeleted: true, deletedAt: new Date() },
     })
-  }
+    if (linked && !linked.isDeleted) {
+      const updated = await tx.expense.update({
+        where: { id: linked.id },
+        data: { isDeleted: true, deletedAt: new Date() },
+      })
+      await syncExpenseJournalEntry(tx, updated.id)
+    }
 
-  await prisma.salary.delete({ where: { id } })
+    await tx.salary.delete({ where: { id } })
+  })
   revalidatePath("/dashboard/finance/salaries")
   revalidatePath("/dashboard/finance/expenses")
 }

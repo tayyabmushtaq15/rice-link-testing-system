@@ -13,8 +13,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
 import { Edit, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import type { SortDir } from "@/lib/listQuery"
 
 interface Income {
   id: string
@@ -33,9 +36,28 @@ interface Income {
 interface IncomeTableProps {
   incomeList: Income[]
   onDelete?: () => void
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
 }
 
-export function IncomeTable({ incomeList, onDelete }: IncomeTableProps) {
+export function IncomeTable({
+  incomeList,
+  onDelete,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: IncomeTableProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -74,19 +96,39 @@ export function IncomeTable({ incomeList, onDelete }: IncomeTableProps) {
         <CardTitle>Income Records</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Transaction No</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
+                <SortableTableHead
+                  label="Date"
+                  sortKey="date"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
+                <SortableTableHead
+                  label="Source"
+                  sortKey="source"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                />
+                <SortableTableHead
+                  label="Amount"
+                  sortKey="amount"
+                  className="text-right"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
                 <TableHead>Method</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
@@ -104,7 +146,9 @@ export function IncomeTable({ incomeList, onDelete }: IncomeTableProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(income.amount)}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(income.amount)}
+                  </TableCell>
                   <TableCell className="text-sm">{income.paymentMethod}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -128,6 +172,14 @@ export function IncomeTable({ incomeList, onDelete }: IncomeTableProps) {
             </TableBody>
           </Table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+          basePath={basePath}
+          searchParams={searchParams}
+        />
       </CardContent>
     </Card>
   )

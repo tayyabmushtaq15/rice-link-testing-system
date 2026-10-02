@@ -8,7 +8,11 @@ import { Plus, DollarSign } from "lucide-react"
 import { SalaryTable } from "@/components/finance/salaries/SalaryTable"
 import { formatCurrency } from "@/lib/utils"
 
-export default async function FinanceSalariesPage() {
+export default async function FinanceSalariesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; sort?: string; dir?: string }>
+}) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -16,7 +20,8 @@ export default async function FinanceSalariesPage() {
     redirect("/dashboard")
   }
 
-  const { salaries } = await getSalaryList()
+  const params = await searchParams
+  const list = await getSalaryList({ page: params.page, sort: params.sort, dir: params.dir })
   const stats = await getSalaryStats()
 
   return (
@@ -74,7 +79,17 @@ export default async function FinanceSalariesPage() {
         </Card>
       </div>
 
-      <SalaryTable salaries={salaries} />
+      <SalaryTable
+        salaries={list.salaries}
+        total={list.total}
+        page={list.page}
+        pageSize={list.pageSize}
+        totalPages={list.totalPages}
+        sort={list.sort}
+        dir={list.dir}
+        basePath="/dashboard/finance/salaries"
+        searchParams={params}
+      />
     </div>
   )
 }

@@ -128,11 +128,7 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
             <FormField
               control={form.control}
@@ -210,7 +206,9 @@ export function SalaryForm({ initialData, salaryId, employees }: SalaryFormProps
                         value={field.value ?? ""}
                         onChange={(e) =>
                           field.onChange(
-                            e.target.value === "" ? new Date().getFullYear() : Number(e.target.value)
+                            e.target.value === ""
+                              ? new Date().getFullYear()
+                              : Number(e.target.value),
                           )
                         }
                         onBlur={field.onBlur}

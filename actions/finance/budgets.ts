@@ -8,9 +8,7 @@ import { checkFinanceAccess } from "./_shared"
 
 const budgetSchema = z.object({
   categoryId: z.string().min(1, "Category is required"),
-  month: z
-    .string()
-    .refine((m) => (MONTHS as readonly string[]).includes(m), "Month is required"),
+  month: z.string().refine((m) => (MONTHS as readonly string[]).includes(m), "Month is required"),
   year: z.coerce.number().int().min(2000).max(2100),
   budgetAmount: z.coerce.number().positive("Budget amount must be greater than 0"),
 })
@@ -124,7 +122,7 @@ export async function getBudgetVsActual(month: string, year: number) {
     prisma.budget.findMany({
       where: { month, year },
       include: { category: true },
-      orderBy: { category: { name: "asc" } },
+      orderBy: [{ category: { name: "asc" } }, { id: "asc" }],
     }),
     prisma.expense.groupBy({
       by: ["categoryId"],
@@ -136,9 +134,7 @@ export async function getBudgetVsActual(month: string, year: number) {
     }),
   ])
 
-  const spentByCategory = new Map(
-    expenses.map((e) => [e.categoryId, e._sum.amount || 0])
-  )
+  const spentByCategory = new Map(expenses.map((e) => [e.categoryId, e._sum.amount || 0]))
 
   const rows = budgets.map((budget) => {
     const spent = spentByCategory.get(budget.categoryId) || 0
@@ -154,9 +150,7 @@ export async function getBudgetVsActual(month: string, year: number) {
       remaining,
       isOverspent: spent > budget.budgetAmount,
       utilizationPercent:
-        budget.budgetAmount > 0
-          ? Number(((spent / budget.budgetAmount) * 100).toFixed(1))
-          : 0,
+        budget.budgetAmount > 0 ? Number(((spent / budget.budgetAmount) * 100).toFixed(1)) : 0,
     }
   })
 

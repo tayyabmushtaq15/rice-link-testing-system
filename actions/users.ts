@@ -5,6 +5,21 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import type { Prisma } from "@prisma/client"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const USER_SORT_KEYS = ["name", "email", "role", "createdAt"] as const
+type UserSortKey = (typeof USER_SORT_KEYS)[number]
+
+function userOrderBy(sort: UserSortKey, dir: SortDir) {
+  const primary: Record<UserSortKey, Prisma.UserOrderByWithRelationInput> = {
+    name: { name: dir },
+    email: { email: dir },
+    role: { role: dir },
+    createdAt: { createdAt: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const userSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -32,19 +47,39 @@ async function checkAdmin() {
   return session.user
 }
 
-export async function getUsers() {
+export async function getUsers(params: {
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkAdmin()
 
-  return prisma.user.findMany({
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "desc" },
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: USER_SORT_KEYS,
+    defaultSort: "createdAt",
+    defaultDir: "desc",
   })
+  const orderBy = userOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.user.count(),
+    ({ skip, take }) =>
+      prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+        },
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getUser(id: string) {

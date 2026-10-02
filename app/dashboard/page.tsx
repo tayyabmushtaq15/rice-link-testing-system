@@ -6,10 +6,5 @@ export default async function DashboardPage() {
   const session = await auth()
   const data = await getDashboardOverview()
 
-  return (
-    <OwnerDashboard
-      data={data}
-      ownerName={session?.user?.name || "Owner"}
-    />
-  )
+  return <OwnerDashboard data={data} ownerName={session?.user?.name || "Owner"} />
 }

@@ -3,11 +3,7 @@ import { Building2 } from "lucide-react"
 import { getMill } from "@/actions/mills"
 import { notFound } from "next/navigation"
 
-export default async function EditMillPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditMillPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const mill = await getMill(id)
 

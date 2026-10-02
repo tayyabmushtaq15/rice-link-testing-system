@@ -74,7 +74,8 @@ const formSchema = productionOutputSchema.extend({
   polishSaleRate: z.coerce.number().min(0, "Polish sale rate cannot be negative"),
 })
 
-type ProductionOutputFormInput = Omit<z.input<typeof formSchema>,
+type ProductionOutputFormInput = Omit<
+  z.input<typeof formSchema>,
   | "paddyWeight"
   | "rice"
   | "brokenRice"
@@ -153,15 +154,7 @@ function formatMoney(value: number) {
   return `PKR ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 }
 
-function SummaryCard({
-  title,
-  value,
-  detail,
-}: {
-  title: string
-  value: string
-  detail: string
-}) {
+function SummaryCard({ title, value, detail }: { title: string; value: string; detail: string }) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -185,7 +178,11 @@ export function ProductionOutputForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<ProductionOutputFormInput, unknown, ProductionOutputFormValues>({
-    resolver: zodResolver(formSchema) as Resolver<ProductionOutputFormInput, unknown, ProductionOutputFormValues>,
+    resolver: zodResolver(formSchema) as Resolver<
+      ProductionOutputFormInput,
+      unknown,
+      ProductionOutputFormValues
+    >,
     defaultValues: {
       paddyWeight: initialData?.paddyWeight || lotWeight,
       rice: initialData?.rice || 0,
@@ -211,7 +208,7 @@ export function ProductionOutputForm({
   const values = form.watch()
   const summary = useMemo(
     () => calculateProductionSummary(values, purchaseRate),
-    [values, purchaseRate]
+    [values, purchaseRate],
   )
 
   async function onSubmit(data: ProductionOutputFormValues) {
@@ -400,7 +397,11 @@ export function ProductionOutputForm({
               </div>
 
               <div className="flex gap-3">
-                <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
                   <Save className="mr-2 h-4 w-4" />
                   {isSubmitting ? "Saving..." : "Save Output"}
                 </Button>

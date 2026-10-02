@@ -5,16 +5,48 @@ import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { LEDGER_SOURCE, deleteJournalEntry, syncIncomeJournalEntry } from "@/lib/ledger"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const INCOME_SORT_KEYS = ["date", "amount", "source"] as const
+type IncomeSortKey = (typeof INCOME_SORT_KEYS)[number]
+
+function incomeOrderBy(sort: IncomeSortKey, dir: SortDir) {
+  const primary: Record<IncomeSortKey, Prisma.IncomeOrderByWithRelationInput> = {
+    date: { date: dir },
+    amount: { amount: dir },
+    source: { source: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const incomeSchema = z.object({
   transactionNo: z.string().optional().or(z.literal("")),
   date: z.coerce.date(),
-  source: z.string().min(2, "Source must be at least 2 characters").max(100, "Source must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional().or(z.literal("")).nullable(),
+  source: z
+    .string()
+    .min(2, "Source must be at least 2 characters")
+    .max(100, "Source must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   paymentMethod: z.string().min(1, "Payment method is required"),
-  referenceNumber: z.string().max(100, "Reference number must be less than 100 characters").optional().or(z.literal("")).nullable(),
-  notes: z.string().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")).nullable(),
+  referenceNumber: z
+    .string()
+    .max(100, "Reference number must be less than 100 characters")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
+  notes: z
+    .string()
+    .max(500, "Notes must be less than 500 characters")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
   paddyLotId: z.string().optional().or(z.literal("")).nullable(),
 })
 
@@ -49,15 +81,17 @@ async function generateTransactionNo(): Promise<string> {
   return `INC-${monthKey}-${sequence}`
 }
 
-export async function getIncomeList(
-  search?: string,
-  startDate?: Date,
-  endDate?: Date,
-  limit = 50,
-  offset = 0
-) {
+export async function getIncomeList(params: {
+  search?: string
+  startDate?: Date
+  endDate?: Date
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkFinanceAccess()
 
+  const { search, startDate, endDate } = params
   const whereClause: Prisma.IncomeWhereInput = {}
 
   if (search) {
@@ -75,22 +109,31 @@ export async function getIncomeList(
     }
   }
 
-  const [income, total] = await Promise.all([
-    prisma.income.findMany({
-      where: whereClause,
-      include: {
-        createdBy: {
-          select: { name: true, email: true },
-        },
-      },
-      orderBy: { date: "desc" },
-      take: limit,
-      skip: offset,
-    }),
-    prisma.income.count({ where: whereClause }),
-  ])
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: INCOME_SORT_KEYS,
+    defaultSort: "date",
+    defaultDir: "desc",
+  })
+  const orderBy = incomeOrderBy(sort, dir)
 
-  return { income, total }
+  const result = await paginate(
+    () => prisma.income.count({ where: whereClause }),
+    ({ skip, take }) =>
+      prisma.income.findMany({
+        where: whereClause,
+        include: {
+          createdBy: {
+            select: { name: true, email: true },
+          },
+        },
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getIncomeById(id: string) {
@@ -131,25 +174,29 @@ export async function createIncome(data: IncomeFormValues) {
     }
   }
 
-  const income = await prisma.income.create({
-    data: {
-      transactionNo,
-      date: parsedData.date,
-      source: parsedData.source,
-      description: parsedData.description || null,
-      amount: parsedData.amount,
-      paymentMethod: parsedData.paymentMethod,
-      referenceNumber: parsedData.referenceNumber || null,
-      notes: parsedData.notes || null,
-      paddyLotId: parsedData.paddyLotId || null,
-      createdById: userId,
-    },
-    include: {
-      createdBy: {
-        select: { name: true, email: true },
+  const income = await prisma.$transaction(async (tx) => {
+    const created = await tx.income.create({
+      data: {
+        transactionNo,
+        date: parsedData.date,
+        source: parsedData.source,
+        description: parsedData.description || null,
+        amount: parsedData.amount,
+        paymentMethod: parsedData.paymentMethod,
+        referenceNumber: parsedData.referenceNumber || null,
+        notes: parsedData.notes || null,
+        paddyLotId: parsedData.paddyLotId || null,
+        createdById: userId,
       },
-      paddyLot: { select: { id: true, lotNumber: true } },
-    },
+      include: {
+        createdBy: {
+          select: { name: true, email: true },
+        },
+        paddyLot: { select: { id: true, lotNumber: true } },
+      },
+    })
+    await syncIncomeJournalEntry(tx, created.id)
+    return created
   })
 
   revalidatePath("/dashboard/finance/income")
@@ -175,24 +222,28 @@ export async function updateIncome(id: string, data: IncomeFormValues) {
     }
   }
 
-  const income = await prisma.income.update({
-    where: { id },
-    data: {
-      date: parsedData.date,
-      source: parsedData.source,
-      description: parsedData.description || null,
-      amount: parsedData.amount,
-      paymentMethod: parsedData.paymentMethod,
-      referenceNumber: parsedData.referenceNumber || null,
-      notes: parsedData.notes || null,
-      paddyLotId: parsedData.paddyLotId || null,
-    },
-    include: {
-      createdBy: {
-        select: { name: true, email: true },
+  const income = await prisma.$transaction(async (tx) => {
+    const updated = await tx.income.update({
+      where: { id },
+      data: {
+        date: parsedData.date,
+        source: parsedData.source,
+        description: parsedData.description || null,
+        amount: parsedData.amount,
+        paymentMethod: parsedData.paymentMethod,
+        referenceNumber: parsedData.referenceNumber || null,
+        notes: parsedData.notes || null,
+        paddyLotId: parsedData.paddyLotId || null,
       },
-      paddyLot: { select: { id: true, lotNumber: true } },
-    },
+      include: {
+        createdBy: {
+          select: { name: true, email: true },
+        },
+        paddyLot: { select: { id: true, lotNumber: true } },
+      },
+    })
+    await syncIncomeJournalEntry(tx, updated.id)
+    return updated
   })
 
   revalidatePath("/dashboard/finance/income")
@@ -204,8 +255,9 @@ export async function updateIncome(id: string, data: IncomeFormValues) {
 export async function deleteIncome(id: string) {
   await checkFinanceAccess()
 
-  await prisma.income.delete({
-    where: { id },
+  await prisma.$transaction(async (tx) => {
+    await tx.income.delete({ where: { id } })
+    await deleteJournalEntry(tx, LEDGER_SOURCE.INCOME, id)
   })
 
   revalidatePath("/dashboard/finance/income")

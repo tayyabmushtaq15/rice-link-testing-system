@@ -14,8 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
 import { Edit, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import type { SortDir } from "@/lib/listQuery"
 
 interface Salary {
   id: string
@@ -34,9 +37,28 @@ interface Salary {
 interface SalaryTableProps {
   salaries: Salary[]
   onDelete?: () => void
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
 }
 
-export function SalaryTable({ salaries, onDelete }: SalaryTableProps) {
+export function SalaryTable({
+  salaries,
+  onDelete,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: SalaryTableProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
 
@@ -64,7 +86,21 @@ export function SalaryTable({ salaries, onDelete }: SalaryTableProps) {
     )
   }
 
-  const monthNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  const monthNames = [
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ]
 
   return (
     <Card>
@@ -72,21 +108,41 @@ export function SalaryTable({ salaries, onDelete }: SalaryTableProps) {
         <CardTitle>Salary Records</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Period</TableHead>
+                <SortableTableHead
+                  label="Employee"
+                  sortKey="employee"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                />
+                <SortableTableHead
+                  label="Period"
+                  sortKey="period"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
                 <TableHead className="text-right">Basic</TableHead>
                 <TableHead className="text-right">Allowances</TableHead>
                 <TableHead className="text-right">Deductions</TableHead>
-                <TableHead className="text-right">Net Salary</TableHead>
+                <SortableTableHead
+                  label="Net Salary"
+                  sortKey="netSalary"
+                  className="text-right"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                  defaultDir="desc"
+                />
                 <TableHead>Status</TableHead>
                 <TableHead className="w-20">Actions</TableHead>
               </TableRow>
@@ -98,14 +154,18 @@ export function SalaryTable({ salaries, onDelete }: SalaryTableProps) {
                   <TableCell>
                     {monthNames[parseInt(salary.month)]} {salary.year}
                   </TableCell>
-                  <TableCell className="text-right text-sm">{formatCurrency(salary.basicSalary)}</TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatCurrency(salary.basicSalary)}
+                  </TableCell>
                   <TableCell className="text-right text-sm text-emerald-600">
                     +{formatCurrency(salary.allowances + salary.bonus + salary.overtime)}
                   </TableCell>
                   <TableCell className="text-right text-sm text-rose-600">
                     -{formatCurrency(salary.deductions)}
                   </TableCell>
-                  <TableCell className="text-right font-semibold">{formatCurrency(salary.netSalary)}</TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(salary.netSalary)}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={salary.paymentStatus === "PAID" ? "default" : "secondary"}>
                       {salary.paymentStatus}
@@ -133,6 +193,14 @@ export function SalaryTable({ salaries, onDelete }: SalaryTableProps) {
             </TableBody>
           </Table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+          basePath={basePath}
+          searchParams={searchParams}
+        />
       </CardContent>
     </Card>
   )

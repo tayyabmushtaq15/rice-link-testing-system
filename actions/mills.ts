@@ -5,6 +5,19 @@ import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const MILL_SORT_KEYS = ["name", "ownerName", "createdAt"] as const
+type MillSortKey = (typeof MILL_SORT_KEYS)[number]
+
+function millOrderBy(sort: MillSortKey, dir: SortDir) {
+  const primary: Record<MillSortKey, Prisma.MillOrderByWithRelationInput> = {
+    name: { name: dir },
+    ownerName: { ownerName: dir },
+    createdAt: { createdAt: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const millSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -26,9 +39,9 @@ async function checkAdmin() {
 
 export async function createMill(data: MillFormValues) {
   await checkAdmin()
-  
+
   const parsedData = millSchema.parse(data)
-  
+
   const mill = await prisma.mill.create({
     data: {
       name: parsedData.name,
@@ -36,18 +49,18 @@ export async function createMill(data: MillFormValues) {
       phone: parsedData.phone || null,
       email: parsedData.email || null,
       address: parsedData.address || null,
-    }
+    },
   })
-  
+
   revalidatePath("/dashboard/mills")
   return mill
 }
 
 export async function updateMill(id: string, data: MillFormValues) {
   await checkAdmin()
-  
+
   const parsedData = millSchema.parse(data)
-  
+
   const mill = await prisma.mill.update({
     where: { id },
     data: {
@@ -56,9 +69,9 @@ export async function updateMill(id: string, data: MillFormValues) {
       phone: parsedData.phone || null,
       email: parsedData.email || null,
       address: parsedData.address || null,
-    }
+    },
   })
-  
+
   revalidatePath("/dashboard/mills")
   revalidatePath(`/dashboard/mills/${id}`)
   return mill
@@ -66,44 +79,59 @@ export async function updateMill(id: string, data: MillFormValues) {
 
 export async function softDeleteMill(id: string) {
   await checkAdmin()
-  
+
   const mill = await prisma.mill.update({
     where: { id },
     data: {
-      isActive: false
-    }
+      isActive: false,
+    },
   })
-  
+
   revalidatePath("/dashboard/mills")
   return mill
 }
 
-export async function getMills(search?: string) {
-  // Allow all logged in users to view? The requirement says "Admin only" for permissions. 
+export async function getMills(params: {
+  search?: string
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
+  // Allow all logged in users to view? The requirement says "Admin only" for permissions.
   // Let's protect the read action as well.
   await checkAdmin()
-  
+
   const whereClause: Prisma.MillWhereInput = {
-    isActive: true
+    isActive: true,
   }
-  
-  if (search) {
+
+  if (params.search) {
     whereClause.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { ownerName: { contains: search, mode: "insensitive" } }
+      { name: { contains: params.search, mode: "insensitive" } },
+      { ownerName: { contains: params.search, mode: "insensitive" } },
     ]
   }
-  
-  return await prisma.mill.findMany({
-    where: whereClause,
-    orderBy: { createdAt: "desc" }
+
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: MILL_SORT_KEYS,
+    defaultSort: "createdAt",
+    defaultDir: "desc",
   })
+  const orderBy = millOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.mill.count({ where: whereClause }),
+    ({ skip, take }) => prisma.mill.findMany({ where: whereClause, orderBy, skip, take }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getMill(id: string) {
   await checkAdmin()
-  
+
   return await prisma.mill.findUnique({
-    where: { id }
+    where: { id },
   })
 }

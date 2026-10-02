@@ -22,7 +22,11 @@ const userFormSchema = z.object({
   email: z.string().email("Invalid email"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   role: z.enum(["ADMIN", "ANALYST", "QA", "MILL_OWNER", "FINANCE_MANAGER"]),
-  password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .optional()
+    .or(z.literal("")),
 })
 
 type UserFormSchemaType = z.infer<typeof userFormSchema>
@@ -127,12 +131,7 @@ export function UserForm({ initialData }: UserFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              placeholder="John Doe"
-              {...register("name")}
-              disabled={loading}
-            />
+            <Input id="name" placeholder="John Doe" {...register("name")} disabled={loading} />
             {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
           </div>
 
@@ -160,7 +159,9 @@ export function UserForm({ initialData }: UserFormProps) {
             <Input
               id="password"
               type="password"
-              placeholder={initialData ? "Leave blank to keep current password" : "At least 6 characters"}
+              placeholder={
+                initialData ? "Leave blank to keep current password" : "At least 6 characters"
+              }
               {...register("password")}
               disabled={loading}
             />

@@ -15,6 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Edit, CheckCircle, Circle } from "lucide-react"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
+import type { SortDir } from "@/lib/listQuery"
 
 interface Category {
   id: string
@@ -27,9 +30,28 @@ interface Category {
 interface CategoryTableProps {
   categories: Category[]
   onStatusChange?: () => void
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
 }
 
-export function CategoryTable({ categories, onStatusChange }: CategoryTableProps) {
+export function CategoryTable({
+  categories,
+  onStatusChange,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: CategoryTableProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>("")
 
@@ -62,16 +84,19 @@ export function CategoryTable({ categories, onStatusChange }: CategoryTableProps
         <CardTitle>Categories</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <SortableTableHead
+                  label="Name"
+                  sortKey="name"
+                  currentSort={sort}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={searchParams}
+                />
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
@@ -116,6 +141,14 @@ export function CategoryTable({ categories, onStatusChange }: CategoryTableProps
             </TableBody>
           </Table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          totalPages={totalPages}
+          basePath={basePath}
+          searchParams={searchParams}
+        />
       </CardContent>
     </Card>
   )

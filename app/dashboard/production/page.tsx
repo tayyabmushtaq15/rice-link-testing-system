@@ -1,14 +1,10 @@
 import Link from "next/link"
-import { BarChart3, Eye, Factory } from "lucide-react"
-
-import { auth } from "@/auth"
-import { getProductionLots } from "@/actions/production"
-import { isLotPostedToFinance } from "@/actions/finance/lotPosting"
-import { ProductionPdfActions } from "@/components/production/ProductionPdfActions"
-import { PostLotToFinanceButton } from "@/components/finance/PostLotToFinanceButton"
-import { Badge } from "@/components/ui/badge"
+import { getProductionBatches } from "@/actions/productionBatches"
+import { Factory, Plus } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { StatusFilterSelect } from "@/components/ui/StatusFilterSelect"
 import {
   Table,
   TableBody,
@@ -17,253 +13,157 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { calculateProductionSummary } from "@/lib/production"
-import { buildProductionPdfData } from "@/lib/productionPdf"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
 
-type ProductionLot = Awaited<ReturnType<typeof getProductionLots>>[number]
+const statusOptions = [
+  { value: "ALL", label: "All" },
+  { value: "DRAFT", label: "Draft" },
+  { value: "IN_PROGRESS", label: "In Progress" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+]
 
-type ProductionTotals = {
-  paddyWeight: number
-  rice: number
-  brokenRice: number
-  husk: number
-  polish: number
-  waste: number
-  shortage: number
-  saleableOutput: number
-  totalOutput: number
-  totalLotCost: number
-  expectedSaleValue: number
-  grossProfit: number
-}
-
-function formatPercent(value: number) {
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`
-}
-
-function formatKg(value: number) {
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} KG`
-}
-
-function formatMoney(value: number) {
-  return `PKR ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
-}
-
-function SummaryCard({
-  title,
-  value,
-  detail,
+export default async function ProductionPage({
+  searchParams,
 }: {
-  title: string
-  value: string
-  detail: string
+  searchParams: Promise<{ status?: string; page?: string; sort?: string; dir?: string }>
 }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground mt-1">{detail}</p>
-      </CardContent>
-    </Card>
-  )
-}
-
-export default async function ProductionPage() {
-  const session = await auth()
-  const canPostFinance =
-    session?.user?.role === "ADMIN" || session?.user?.role === "FINANCE_MANAGER"
-  const lots: ProductionLot[] = await getProductionLots()
-  const completedLots = lots.filter((lot: ProductionLot) => lot.productionOutput)
-
-  const postingStatus = canPostFinance
-    ? await Promise.all(
-        completedLots.map(async (lot) => ({
-          id: lot.id,
-          posted: await isLotPostedToFinance(lot.id),
-        }))
-      )
-    : []
-  const postedMap = new Map(postingStatus.map((s) => [s.id, s.posted]))
-
-  const totals = completedLots.reduce<ProductionTotals>(
-    (acc: ProductionTotals, lot: ProductionLot) => {
-      const output = lot.productionOutput
-      if (!output) return acc
-      const summary = calculateProductionSummary(output, lot.purchaseRate)
-
-      acc.paddyWeight += output.paddyWeight
-      acc.rice += output.rice
-      acc.brokenRice += output.brokenRice
-      acc.husk += output.husk
-      acc.polish += output.polish
-      acc.waste += output.waste
-      acc.shortage += output.shortage
-      acc.saleableOutput += summary.saleableOutput
-      acc.totalOutput += summary.totalOutput
-      acc.totalLotCost += summary.totalLotCost
-      acc.expectedSaleValue += summary.expectedSaleValue
-      acc.grossProfit += summary.grossProfit
-      return acc
-    },
-    {
-      paddyWeight: 0,
-      rice: 0,
-      brokenRice: 0,
-      husk: 0,
-      polish: 0,
-      waste: 0,
-      shortage: 0,
-      saleableOutput: 0,
-      totalOutput: 0,
-      totalLotCost: 0,
-      expectedSaleValue: 0,
-      grossProfit: 0,
-    }
-  )
-  const totalRecoveryPercent =
-    totals.paddyWeight > 0 ? (totals.saleableOutput / totals.paddyWeight) * 100 : 0
-  const averageCost =
-    totals.saleableOutput > 0 ? totals.totalLotCost / totals.saleableOutput : 0
-  const profitMargin =
-    totals.expectedSaleValue > 0 ? (totals.grossProfit / totals.expectedSaleValue) * 100 : 0
-
+  const params = await searchParams
+  const status = params.status || "ALL"
+  const basePath = "/dashboard/production"
+  const list = await getProductionBatches({ status, page: params.page, sort: params.sort, dir: params.dir })
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Production Output</h1>
-          <p className="text-muted-foreground mt-1">Paddy lot output and recovery summary</p>
+          <h1 className="text-3xl font-bold tracking-tight">Production</h1>
+          <p className="mt-1 text-muted-foreground">
+            Create production batches, track yield, and post finished output to stock.
+          </p>
         </div>
+        <Link
+          href="/dashboard/production/new"
+          className={buttonVariants({ className: "bg-blue-600 hover:bg-blue-700" })}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          New Production Batch
+        </Link>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-5">
-        <SummaryCard
-          title="Lots With Output"
-          value={completedLots.length.toString()}
-          detail={`${lots.length} paddy lots tracked`}
-        />
-        <SummaryCard
-          title="Total Recovery"
-          value={formatPercent(totalRecoveryPercent)}
-          detail={formatKg(totals.saleableOutput)}
-        />
-        <SummaryCard
-          title="Total Output"
-          value={formatKg(totals.totalOutput)}
-          detail={`${formatKg(totals.paddyWeight)} paddy input`}
-        />
-        <SummaryCard
-          title="Average Cost"
-          value={formatMoney(averageCost)}
-          detail="Per saleable output KG"
-        />
-        <SummaryCard
-          title="Expected Profit"
-          value={formatMoney(totals.grossProfit)}
-          detail={`${formatPercent(profitMargin)} margin`}
-        />
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Factory className="h-5 w-5 text-emerald-600" />
-            Paddy Lot Outputs
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Factory className="h-5 w-5 text-blue-600" />
+              Production Register
+            </CardTitle>
+            <form method="get">
+              <StatusFilterSelect status={status} options={statusOptions} />
+              <input type="hidden" name="sort" value={list.sort} />
+              <input type="hidden" name="dir" value={list.dir} />
+            </form>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Lot Number</TableHead>
-                <TableHead>Mill</TableHead>
-                <TableHead>Variety</TableHead>
-                <TableHead>Paddy Weight</TableHead>
-                <TableHead>Total Output</TableHead>
-                <TableHead>Rice</TableHead>
-                <TableHead>Total Recovery</TableHead>
-                <TableHead>Avg Cost</TableHead>
-                <TableHead>Profit</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Batch No.</TableHead>
+                <SortableTableHead
+                  label="Date"
+                  sortKey="date"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                  defaultDir="desc"
+                />
+                <SortableTableHead
+                  label="Input"
+                  sortKey="totalInput"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                  defaultDir="desc"
+                />
+                <TableHead>Output Breakdown</TableHead>
+                <TableHead>Yield</TableHead>
+                <SortableTableHead
+                  label="Status"
+                  sortKey="status"
+                  currentSort={list.sort}
+                  currentDir={list.dir}
+                  basePath={basePath}
+                  searchParams={params}
+                />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lots.length === 0 ? (
+              {list.items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                    No paddy lots found.
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    No production batches found. Click &quot;New Production Batch&quot; to record
+                    one.
                   </TableCell>
                 </TableRow>
               ) : (
-                lots.map((lot: ProductionLot) => {
-                  const output = lot.productionOutput
-                  const lotSummary = output ? calculateProductionSummary(output, lot.purchaseRate) : null
-                  const productionPdf = output
-                    ? buildProductionPdfData({
-                        ...lot,
-                        productionOutput: output,
-                      })
-                    : null
-
-                  return (
-                    <TableRow key={lot.id}>
-                      <TableCell className="font-medium text-emerald-700">
-                        <Link href={`/dashboard/lots/${lot.id}`} className="hover:underline">
-                          {lot.lotNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{lot.mill.name}</TableCell>
-                      <TableCell>{lot.variety}</TableCell>
-                      <TableCell>{formatKg(output?.paddyWeight ?? lot.weight)}</TableCell>
-                      <TableCell>{lotSummary ? formatKg(lotSummary.totalOutput) : "-"}</TableCell>
-                      <TableCell>{output ? formatKg(output.rice) : "-"}</TableCell>
-                      <TableCell>
-                        {lotSummary ? formatPercent(lotSummary.totalRecoveryPercent) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {lotSummary ? formatMoney(lotSummary.costPerSaleableKg) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {lotSummary ? formatMoney(lotSummary.grossProfit) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            output
-                              ? "bg-emerald-100 text-emerald-800 border-none"
-                              : "bg-slate-100 text-slate-800 border-none"
-                          }
-                        >
-                          {output ? "RECORDED" : "PENDING"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 items-center">
-                          {productionPdf && <ProductionPdfActions report={productionPdf} compact />}
-                          {canPostFinance && output && (
-                            <PostLotToFinanceButton
-                              paddyLotId={lot.id}
-                              alreadyPosted={postedMap.get(lot.id) || false}
-                            />
-                          )}
-                          <Link
-                            href={`/dashboard/lots/${lot.id}`}
-                            className={buttonVariants({ variant: "ghost", size: "icon" })}
+                list.items.map((batch) => (
+                  <TableRow key={batch.id}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/dashboard/production/${batch.id}`}
+                        className="text-blue-700 hover:underline"
+                      >
+                        {batch.batchNo}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{batch.productionDate.toLocaleDateString()}</TableCell>
+                    <TableCell>{batch.totalInput.toString()} units</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {batch.outputs.map((output) => (
+                          <span
+                            key={output.id}
+                            className="whitespace-nowrap rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-800"
                           >
-                            {output ? <Eye className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                          </Link>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
+                            {output.product.name}: {Number(output.quantity).toLocaleString()}{" "}
+                            {output.product.unit.symbol}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {Number(batch.totalInput) > 0
+                        ? `${((Number(batch.totalOutput) / Number(batch.totalInput)) * 100).toFixed(1)}%`
+                        : "0.0%"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          batch.status === "COMPLETED"
+                            ? "secondary"
+                            : batch.status === "CANCELLED"
+                              ? "destructive"
+                              : "outline"
+                        }
+                      >
+                        {batch.status.replaceAll("_", " ")}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
+          <Pagination
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+            totalPages={list.totalPages}
+            basePath={basePath}
+            searchParams={params}
+          />
         </CardContent>
       </Card>
     </div>

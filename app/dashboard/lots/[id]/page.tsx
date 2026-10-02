@@ -1,19 +1,26 @@
 import { getPaddyLot } from "@/actions/paddyLots"
-import { ProductionPdfActions } from "@/components/production/ProductionPdfActions"
+import { ProductionPdfActionsClient } from "@/components/production/ProductionPdfActionsClient"
 import { ProductionOutputForm } from "@/components/production/ProductionOutputForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { buildProductionPdfData } from "@/lib/productionPdf"
-import { FileText, ArrowLeft, Factory, User, Calendar, Settings, FileSearch, Scale, Droplets, CircleDollarSign } from "lucide-react"
+import {
+  FileText,
+  ArrowLeft,
+  Factory,
+  User,
+  Calendar,
+  Settings,
+  FileSearch,
+  Scale,
+  Droplets,
+  CircleDollarSign,
+} from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-export default async function LotDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const lot = await getPaddyLot(id)
 
@@ -32,25 +39,35 @@ export default async function LotDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/lots" className={buttonVariants({ variant: "outline", size: "icon" })}>
+          <Link
+            href="/dashboard/lots"
+            className={buttonVariants({ variant: "outline", size: "icon" })}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-emerald-600" />
             <h1 className="text-3xl font-bold tracking-tight">{lot.lotNumber}</h1>
-            <Badge variant={
-              lot.status === "OPEN" ? "default" :
-              lot.status === "PROCESSING" ? "secondary" : "outline"
-            } className={
-              lot.status === "OPEN" ? "bg-emerald-100 text-emerald-800 border-none" : ""
-            }>
+            <Badge
+              variant={
+                lot.status === "OPEN"
+                  ? "default"
+                  : lot.status === "PROCESSING"
+                    ? "secondary"
+                    : "outline"
+              }
+              className={lot.status === "OPEN" ? "bg-emerald-100 text-emerald-800 border-none" : ""}
+            >
               {lot.status}
             </Badge>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {productionPdf && <ProductionPdfActions report={productionPdf} />}
-          <Link href={`/dashboard/lots/${lot.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+          {productionPdf && <ProductionPdfActionsClient report={productionPdf} />}
+          <Link
+            href={`/dashboard/lots/${lot.id}/edit`}
+            className={buttonVariants({ variant: "outline" })}
+          >
             Edit Lot
           </Link>
         </div>
@@ -80,7 +97,9 @@ export default async function LotDetailPage({
               <Settings className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Variety & Crop Year</p>
-                <p className="text-muted-foreground">{lot.variety} - {lot.cropYear}</p>
+                <p className="text-muted-foreground">
+                  {lot.variety} - {lot.cropYear}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -132,7 +151,9 @@ export default async function LotDetailPage({
           <CardContent>
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <p className="text-muted-foreground mb-4">No quality reports attached yet.</p>
-              <Button variant="outline" disabled>Add Quality Report</Button>
+              <Button variant="outline" disabled>
+                Add Quality Report
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -145,7 +166,6 @@ export default async function LotDetailPage({
             initialData={lot.productionOutput}
           />
         </div>
-
       </div>
     </div>
   )

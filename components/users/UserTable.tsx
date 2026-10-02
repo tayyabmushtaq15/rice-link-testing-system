@@ -3,10 +3,20 @@
 import Link from "next/link"
 import { Pencil, Trash2 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { DeleteUserDialog } from "./DeleteUserDialog"
 import { useState } from "react"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
+import type { SortDir } from "@/lib/listQuery"
 
 interface User {
   id: string
@@ -18,6 +28,14 @@ interface User {
 
 interface UserTableProps {
   users: User[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
 }
 
 function getRoleBadgeColor(role: string) {
@@ -35,7 +53,17 @@ function getRoleBadgeColor(role: string) {
   }
 }
 
-export default function UserTable({ users }: UserTableProps) {
+export default function UserTable({
+  users,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: UserTableProps) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -49,10 +77,39 @@ export default function UserTable({ users }: UserTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Created</TableHead>
+            <SortableTableHead
+              label="Name"
+              sortKey="name"
+              currentSort={sort}
+              currentDir={dir}
+              basePath={basePath}
+              searchParams={searchParams}
+            />
+            <SortableTableHead
+              label="Email"
+              sortKey="email"
+              currentSort={sort}
+              currentDir={dir}
+              basePath={basePath}
+              searchParams={searchParams}
+            />
+            <SortableTableHead
+              label="Role"
+              sortKey="role"
+              currentSort={sort}
+              currentDir={dir}
+              basePath={basePath}
+              searchParams={searchParams}
+            />
+            <SortableTableHead
+              label="Created"
+              sortKey="createdAt"
+              currentSort={sort}
+              currentDir={dir}
+              basePath={basePath}
+              searchParams={searchParams}
+              defaultDir="desc"
+            />
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -93,6 +150,14 @@ export default function UserTable({ users }: UserTableProps) {
           )}
         </TableBody>
       </Table>
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        totalPages={totalPages}
+        basePath={basePath}
+        searchParams={searchParams}
+      />
 
       {selectedUserId && (
         <DeleteUserDialog

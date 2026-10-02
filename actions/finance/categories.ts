@@ -5,10 +5,29 @@ import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const CATEGORY_SORT_KEYS = ["name"] as const
+type CategorySortKey = (typeof CATEGORY_SORT_KEYS)[number]
+
+function categoryOrderBy(sort: CategorySortKey, dir: SortDir) {
+  const primary: Record<CategorySortKey, Prisma.ExpenseCategoryOrderByWithRelationInput> = {
+    name: { name: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const categorySchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional().or(z.literal("")).nullable(),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
 })
 
 export type CategoryFormValues = z.infer<typeof categorySchema>
@@ -21,24 +40,39 @@ async function checkFinanceAccess() {
   }
 }
 
-export async function getCategories(search?: string) {
+export async function getCategories(params: {
+  search?: string
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkFinanceAccess()
 
   const whereClause: Prisma.ExpenseCategoryWhereInput = {
     isActive: true,
   }
 
-  if (search) {
+  if (params.search) {
     whereClause.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
+      { name: { contains: params.search, mode: "insensitive" } },
+      { description: { contains: params.search, mode: "insensitive" } },
     ]
   }
 
-  return await prisma.expenseCategory.findMany({
-    where: whereClause,
-    orderBy: { name: "asc" },
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: CATEGORY_SORT_KEYS,
+    defaultSort: "name",
+    defaultDir: "asc",
   })
+  const orderBy = categoryOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.expenseCategory.count({ where: whereClause }),
+    ({ skip, take }) => prisma.expenseCategory.findMany({ where: whereClause, orderBy, skip, take }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getAllCategories(includeInactive = false) {

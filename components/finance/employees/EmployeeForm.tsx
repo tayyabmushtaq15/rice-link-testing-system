@@ -31,6 +31,9 @@ const formSchema = z.object({
   designation: z.string().min(1, "Designation is required").max(100),
   basicSalary: z.number().positive("Basic salary must be greater than 0"),
   status: z.enum(["ACTIVE", "INACTIVE"]),
+  phone: z.string().optional().or(z.literal("")),
+  cnic: z.string().optional().or(z.literal("")),
+  joiningDate: z.coerce.date().optional().or(z.literal("")),
 })
 
 type EmployeeFormValues = z.infer<typeof formSchema>
@@ -53,6 +56,9 @@ export function EmployeeForm({ initialData, employeeId }: EmployeeFormProps) {
       designation: initialData?.designation || "",
       basicSalary: initialData?.basicSalary || 0,
       status: initialData?.status || "ACTIVE",
+      phone: initialData?.phone || "",
+      cnic: initialData?.cnic || "",
+      joiningDate: initialData?.joiningDate || "",
     },
   })
 
@@ -82,9 +88,7 @@ export function EmployeeForm({ initialData, employeeId }: EmployeeFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>
-            )}
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
             <FormField
               control={form.control}
@@ -137,17 +141,17 @@ export function EmployeeForm({ initialData, employeeId }: EmployeeFormProps) {
                   <FormItem>
                     <FormLabel>Basic Salary (PKR) *</FormLabel>
                     <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={field.value === 0 ? "" : field.value}
-                      onChange={(e) =>
-                        field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
-                      }
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={field.value === 0 ? "" : field.value}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                        }
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -175,6 +179,64 @@ export function EmployeeForm({ initialData, employeeId }: EmployeeFormProps) {
                 )}
               />
             </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 0300-1234567" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cnic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNIC</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 35202-1234567-1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="joiningDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Joining Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={
+                        field.value instanceof Date
+                          ? field.value.toISOString().split("T")[0]
+                          : typeof field.value === "string"
+                            ? field.value
+                            : ""
+                      }
+                      onChange={(e) =>
+                        field.onChange(e.target.value ? new Date(e.target.value) : "")
+                      }
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex gap-3">
               <Button

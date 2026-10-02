@@ -27,7 +27,9 @@ export function FinanceLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={cn(
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  isActive
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200",
                 )}
               >
                 {item.label}

@@ -5,13 +5,7 @@ import { getFinanceOverview } from "@/actions/finance/overview"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  WalletCards,
-  Factory,
-} from "lucide-react"
+import { DollarSign, TrendingUp, TrendingDown, WalletCards, Factory } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { getCurrentMonthYear, MONTHS } from "@/lib/finance"
 import { PostLotToFinanceButton } from "@/components/finance/PostLotToFinanceButton"
@@ -206,10 +200,12 @@ export default async function FinanceDashboardPage({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Factory className="h-5 w-5" />
-              Unposted Production Lots
+              Unposted Legacy Paddy Lots
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {overview.postedLotsCount} posted · {overview.unpostedLotsCount} waiting
+              From the older Paddy Lot workflow only — production batches post their costs
+              automatically. {overview.postedLotsCount} posted · {overview.unpostedLotsCount}{" "}
+              waiting
             </p>
           </div>
           <Link href="/dashboard/finance/reports">

@@ -5,11 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-export default async function MillDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function MillDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const mill = await getMill(id)
 
@@ -21,7 +17,10 @@ export default async function MillDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/mills" className={buttonVariants({ variant: "outline", size: "icon" })}>
+          <Link
+            href="/dashboard/mills"
+            className={buttonVariants({ variant: "outline", size: "icon" })}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2">
@@ -29,7 +28,10 @@ export default async function MillDetailPage({
             <h1 className="text-3xl font-bold tracking-tight">{mill.name}</h1>
           </div>
         </div>
-        <Link href={`/dashboard/mills/${mill.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+        <Link
+          href={`/dashboard/mills/${mill.id}/edit`}
+          className={buttonVariants({ variant: "outline" })}
+        >
           Edit Mill
         </Link>
       </div>

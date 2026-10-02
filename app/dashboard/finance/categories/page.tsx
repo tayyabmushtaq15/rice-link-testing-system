@@ -5,11 +5,12 @@ import { getCategories } from "@/actions/finance/categories"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { CategoryTable } from "@/components/finance/categories/CategoryTable"
+import { EntitySearch } from "@/components/ui/EntitySearch"
 
 export default async function FinanceCategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ query?: string; page?: string; sort?: string; dir?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -19,14 +20,18 @@ export default async function FinanceCategoriesPage({
   }
 
   const params = await searchParams
-  const categories = await getCategories(params.search)
+  const query = params.query || ""
+  const basePath = "/dashboard/finance/categories"
+  const list = await getCategories({ search: query, page: params.page, sort: params.sort, dir: params.dir })
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Expense Categories</h1>
-          <p className="text-sm text-muted-foreground">Manage expense categories for organizing transactions.</p>
+          <p className="text-sm text-muted-foreground">
+            Manage expense categories for organizing transactions.
+          </p>
         </div>
         <Link href="/dashboard/finance/categories/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
@@ -36,7 +41,21 @@ export default async function FinanceCategoriesPage({
         </Link>
       </div>
 
-      <CategoryTable categories={categories} />
+      <div className="w-72">
+        <EntitySearch initialQuery={query} placeholder="Search categories..." />
+      </div>
+
+      <CategoryTable
+        categories={list.items}
+        total={list.total}
+        page={list.page}
+        pageSize={list.pageSize}
+        totalPages={list.totalPages}
+        sort={list.sort}
+        dir={list.dir}
+        basePath={basePath}
+        searchParams={params}
+      />
     </div>
   )
 }

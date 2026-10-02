@@ -2,7 +2,6 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { getAllCategories } from "@/actions/finance/categories"
 import { ExpenseForm } from "@/components/finance/expenses/ExpenseForm"
-import { getPaddyLotsForSelect } from "@/actions/finance/lotPosting"
 import { getEmployees } from "@/actions/finance/employees"
 
 export default async function NewExpensePage() {
@@ -13,11 +12,7 @@ export default async function NewExpensePage() {
     redirect("/dashboard")
   }
 
-  const [categories, lots, employees] = await Promise.all([
-    getAllCategories(false),
-    getPaddyLotsForSelect(),
-    getEmployees(),
-  ])
+  const [categories, employees] = await Promise.all([getAllCategories(false), getEmployees()])
 
   return (
     <div className="space-y-4">
@@ -29,7 +24,6 @@ export default async function NewExpensePage() {
       </div>
       <ExpenseForm
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        lots={lots}
         employees={employees.map((e) => ({
           id: e.id,
           name: e.name,

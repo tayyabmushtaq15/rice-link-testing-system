@@ -1,10 +1,4 @@
-import {
-  Document,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer"
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer"
 
 export type ProductionPdfData = {
   reportNumber: string
@@ -39,7 +33,7 @@ export type ProductionPdfData = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 32,
+    padding: 24,
     fontFamily: "Helvetica",
     fontSize: 9,
     color: "#17211b",
@@ -51,8 +45,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     borderBottomWidth: 1,
     borderBottomColor: "#d7e5dc",
-    paddingBottom: 14,
-    marginBottom: 14,
+    paddingBottom: 10,
+    marginBottom: 10,
   },
   brand: {
     flexDirection: "row",
@@ -91,14 +85,14 @@ const styles = StyleSheet.create({
     color: "#5f6f65",
   },
   section: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 10,
     fontWeight: "bold",
     textTransform: "uppercase",
     color: "#0f7a52",
-    marginBottom: 6,
+    marginBottom: 5,
   },
   detailsGrid: {
     flexDirection: "row",
@@ -108,7 +102,7 @@ const styles = StyleSheet.create({
   },
   detailCell: {
     width: "33.333%",
-    padding: 7,
+    padding: 5,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
     borderBottomWidth: 1,
@@ -130,7 +124,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    minHeight: 23,
+    minHeight: 19,
     borderBottomWidth: 1,
     borderBottomColor: "#d7e5dc",
   },
@@ -145,59 +139,59 @@ const styles = StyleSheet.create({
   },
   outputLabelCol: {
     width: "50%",
-    padding: 6,
+    padding: 4,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   outputValueCol: {
     width: "25%",
-    padding: 6,
+    padding: 4,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   outputLastCol: {
     width: "25%",
-    padding: 6,
+    padding: 4,
   },
   costLabelCol: {
     width: "60%",
-    padding: 6,
+    padding: 4,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   costValueCol: {
     width: "40%",
-    padding: 6,
+    padding: 4,
   },
   saleLabelCol: {
     width: "34%",
-    padding: 6,
+    padding: 4,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   saleValueCol: {
     width: "22%",
-    padding: 6,
+    padding: 4,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   saleLastCol: {
     width: "22%",
-    padding: 6,
+    padding: 4,
   },
   twoColumn: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   half: {
     width: "50%",
   },
   footer: {
     position: "absolute",
-    left: 32,
-    right: 32,
-    bottom: 22,
-    paddingTop: 7,
+    left: 24,
+    right: 24,
+    bottom: 14,
+    paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: "#d7e5dc",
     color: "#7b8981",
@@ -347,7 +341,9 @@ export function ProductionPdfDocument({ report }: { report: ProductionPdfData })
           </View>
           <View style={styles.half}>
             <Text style={styles.sectionTitle}>Summary</Text>
-            <CostTable rows={report.summaryRows.map((row) => ({ label: row.label, amount: row.value }))} />
+            <CostTable
+              rows={report.summaryRows.map((row) => ({ label: row.label, amount: row.value }))}
+            />
           </View>
         </View>
 

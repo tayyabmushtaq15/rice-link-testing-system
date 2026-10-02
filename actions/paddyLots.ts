@@ -5,6 +5,20 @@ import { auth } from "@/auth"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+
+const PADDY_LOT_SORT_KEYS = ["lotNumber", "purchaseDate", "status", "weight"] as const
+type PaddyLotSortKey = (typeof PADDY_LOT_SORT_KEYS)[number]
+
+function paddyLotOrderBy(sort: PaddyLotSortKey, dir: SortDir) {
+  const primary: Record<PaddyLotSortKey, Prisma.PaddyLotOrderByWithRelationInput> = {
+    lotNumber: { lotNumber: dir },
+    purchaseDate: { purchaseDate: dir },
+    status: { status: dir },
+    weight: { weight: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const paddyLotSchema = z.object({
   millId: z.string().min(1, "Mill is required"),
@@ -17,13 +31,14 @@ const paddyLotSchema = z.object({
   }),
 
   weight: z.number().min(0.1, "Weight must be greater than 0"),
-  moisture: z.number()
+  moisture: z
+    .number()
     .min(0, "Moisture cannot be negative")
     .max(100, "Moisture cannot exceed 100%"),
   purchaseRate: z.number().min(0, "Purchase rate cannot be negative"),
 
   status: z.enum(["OPEN", "PROCESSING", "COMPLETED"]).default("OPEN"),
-});
+})
 
 export type PaddyLotFormValues = z.infer<typeof paddyLotSchema>
 
@@ -38,8 +53,8 @@ async function checkPermission() {
 function generateLotNumber() {
   const date = new Date()
   const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
   const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase()
   return `LOT-${yyyy}${mm}${dd}-${randomStr}`
 }
@@ -47,7 +62,7 @@ function generateLotNumber() {
 export async function createPaddyLot(data: PaddyLotFormValues) {
   await checkPermission()
   const parsedData = paddyLotSchema.parse(data)
-  
+
   const lot = await prisma.paddyLot.create({
     data: {
       lotNumber: generateLotNumber(),
@@ -60,9 +75,9 @@ export async function createPaddyLot(data: PaddyLotFormValues) {
       moisture: parsedData.moisture,
       purchaseRate: parsedData.purchaseRate,
       status: parsedData.status,
-    }
+    },
   })
-  
+
   revalidatePath("/dashboard/lots")
   return lot
 }
@@ -70,7 +85,7 @@ export async function createPaddyLot(data: PaddyLotFormValues) {
 export async function updatePaddyLot(id: string, data: PaddyLotFormValues) {
   await checkPermission()
   const parsedData = paddyLotSchema.parse(data)
-  
+
   const lot = await prisma.paddyLot.update({
     where: { id },
     data: {
@@ -83,52 +98,74 @@ export async function updatePaddyLot(id: string, data: PaddyLotFormValues) {
       moisture: parsedData.moisture,
       purchaseRate: parsedData.purchaseRate,
       status: parsedData.status,
-    }
+    },
   })
-  
+
   revalidatePath("/dashboard/lots")
   revalidatePath(`/dashboard/lots/${id}`)
   return lot
 }
 
-export async function getPaddyLots(search?: string, millId?: string) {
+export async function getPaddyLots(params: {
+  search?: string
+  millId?: string
+  page?: string
+  sort?: string
+  dir?: string
+} = {}) {
   await checkPermission()
-  
+
   const whereClause: Prisma.PaddyLotWhereInput = {}
-  
-  if (millId && millId !== "all") {
-    whereClause.millId = millId
+
+  if (params.millId && params.millId !== "all") {
+    whereClause.millId = params.millId
   }
-  
-  if (search) {
+
+  if (params.search) {
     whereClause.OR = [
-      { lotNumber: { contains: search, mode: "insensitive" } },
-      { supplierName: { contains: search, mode: "insensitive" } },
-      { variety: { contains: search, mode: "insensitive" } }
+      { lotNumber: { contains: params.search, mode: "insensitive" } },
+      { supplierName: { contains: params.search, mode: "insensitive" } },
+      { variety: { contains: params.search, mode: "insensitive" } },
     ]
   }
-  
-  return await prisma.paddyLot.findMany({
-    where: whereClause,
-    include: {
-      mill: {
-        select: { name: true }
-      },
-      productionOutput: true
-    },
-    orderBy: { createdAt: "desc" }
+
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: PADDY_LOT_SORT_KEYS,
+    defaultSort: "purchaseDate",
+    defaultDir: "desc",
   })
+  const orderBy = paddyLotOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.paddyLot.count({ where: whereClause }),
+    ({ skip, take }) =>
+      prisma.paddyLot.findMany({
+        where: whereClause,
+        include: {
+          mill: {
+            select: { name: true },
+          },
+          productionOutput: true,
+        },
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getPaddyLot(id: string) {
   await checkPermission()
-  
+
   return await prisma.paddyLot.findUnique({
     where: { id },
     include: {
       mill: true,
-      productionOutput: true
-    }
+      productionOutput: true,
+    },
   })
 }
 
@@ -138,6 +175,6 @@ export async function getMillsForDropdown() {
   return await prisma.mill.findMany({
     where: { isActive: true },
     select: { id: true, name: true },
-    orderBy: { name: "asc" }
+    orderBy: { name: "asc" },
   })
 }

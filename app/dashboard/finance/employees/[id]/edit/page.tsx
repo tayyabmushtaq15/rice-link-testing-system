@@ -5,11 +5,7 @@ import { EmployeeForm } from "@/components/finance/employees/EmployeeForm"
 import { formatCurrency } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function EditEmployeePage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -43,6 +39,9 @@ export default async function EditEmployeePage({
           designation: employee.designation,
           basicSalary: employee.basicSalary,
           status: employee.status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+          phone: employee.phone || "",
+          cnic: employee.cnic || "",
+          joiningDate: employee.joiningDate || "",
         }}
       />
 

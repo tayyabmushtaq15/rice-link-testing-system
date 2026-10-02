@@ -14,7 +14,9 @@ export default async function NewCategoryPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Create Category</h1>
-        <p className="text-sm text-muted-foreground">Add a new expense category to organize your expenses.</p>
+        <p className="text-sm text-muted-foreground">
+          Add a new expense category to organize your expenses.
+        </p>
       </div>
       <CategoryForm />
     </div>

@@ -5,13 +5,13 @@ import { Trash2 } from "lucide-react"
 import { softDeleteMill } from "@/actions/mills"
 import { useTransition } from "react"
 
-export default function DeleteMillButton({ id, millName }: { id: string, millName: string }) {
+export default function DeleteMillButton({ id, millName }: { id: string; millName: string }) {
   const [isPending, startTransition] = useTransition()
 
   return (
-    <Button 
-      variant="destructive" 
-      size="icon" 
+    <Button
+      variant="destructive"
+      size="icon"
       onClick={() => {
         if (confirm(`Are you sure you want to delete ${millName}?`)) {
           startTransition(async () => {

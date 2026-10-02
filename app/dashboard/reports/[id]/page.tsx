@@ -3,12 +3,20 @@ import { notFound } from "next/navigation"
 import { ArrowLeft, ClipboardList, Pencil } from "lucide-react"
 
 import { getReport } from "@/actions/reports"
-import { ReportPdfActions } from "@/components/reports/ReportPdfActions"
+import { InlineReportEditor } from "@/components/reports/InlineReportEditor"
+import { ReportPdfActionsClient } from "@/components/reports/ReportPdfActionsClient"
 import type { ReportPdfData } from "@/components/reports/ReportPdfDocument"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 function getStatusClass(status: string) {
   if (status === "DRAFT") return "bg-slate-100 text-slate-800 border-none"
@@ -26,11 +34,7 @@ function formatDate(value?: Date | null) {
   return value ? value.toLocaleDateString() : "-"
 }
 
-export default async function ReportDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const report = await getReport(id)
 
@@ -39,22 +43,25 @@ export default async function ReportDetailPage({
   }
 
   const valuesByFieldId = new Map(
-    report.values.map((value) => [value.templateFieldId, value.value])
+    report.values.map((value) => [value.templateFieldId, value.value]),
   )
+  const referenceLabel =
+    report.paddyLot?.lotNumber || report.purchase?.purchaseNo || report.productionBatch?.batchNo || "Report"
   const pdfReport: ReportPdfData = {
     id: report.id,
     reportNumber: formatReportNumber(report.id),
     reportTitle: report.template.name,
-    partyName: report.paddyLot.supplierName,
-    variety: report.paddyLot.variety,
-    lotNumber: report.paddyLot.lotNumber,
-    millName: report.paddyLot.mill.name,
-    millOwnerName: report.paddyLot.mill.ownerName,
+    partyName: report.paddyLot?.supplierName || report.purchase?.supplier.name || "-",
+    variety: report.paddyLot?.variety || "-",
+    lotNumber: referenceLabel,
+    millName: report.paddyLot?.mill.name || "-",
+    millOwnerName: report.paddyLot?.mill.ownerName || "-",
     analyst: report.analyst.name || report.analyst.email,
     qaApproval: report.approvedBy?.name || report.approvedBy?.email || "-",
     approvedAt: formatDate(report.approvedAt),
     submissionDate: formatDate(report.submissionDate),
     results: report.template.fields.map((field) => ({
+      id: field.id,
       name: field.name,
       type: field.type,
       value: valuesByFieldId.get(field.id) || "-",
@@ -65,24 +72,28 @@ export default async function ReportDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard/reports" className={buttonVariants({ variant: "outline", size: "icon" })}>
+          <Link
+            href="/dashboard/reports"
+            className={buttonVariants({ variant: "outline", size: "icon" })}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-3">
             <ClipboardList className="h-6 w-6 text-emerald-600" />
-            <h1 className="text-3xl font-bold tracking-tight">{report.paddyLot.lotNumber}</h1>
-            <Badge className={getStatusClass(report.status)}>
-              {report.status}
-            </Badge>
+            <h1 className="text-3xl font-bold tracking-tight">{referenceLabel}</h1>
+            <Badge className={getStatusClass(report.status)}>{report.status}</Badge>
           </div>
         </div>
-        {report.status === "DRAFT" && (
-          <Link href={`/dashboard/reports/${report.id}/edit`} className={buttonVariants({ variant: "outline" })}>
+        {report.status === "DRAFT" && report.paddyLotId && (
+          <Link
+            href={`/dashboard/reports/${report.id}/edit`}
+            className={buttonVariants({ variant: "outline" })}
+          >
             <Pencil className="mr-2 h-4 w-4" />
             Edit Draft
           </Link>
         )}
-        {report.status === "APPROVED" && <ReportPdfActions report={pdfReport} />}
+        {report.status === "APPROVED" && <ReportPdfActionsClient report={pdfReport} />}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -110,25 +121,58 @@ export default async function ReportDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Lot Reference</CardTitle>
+            <CardTitle className="text-lg">Reference</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div>
-              <p className="text-sm font-medium">Lot Number</p>
-              <Link href={`/dashboard/lots/${report.paddyLot.id}`} className="text-emerald-700 hover:underline">
-                {report.paddyLot.lotNumber}
-              </Link>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Mill</p>
-              <p className="text-muted-foreground">{report.paddyLot.mill.name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Supplier & Variety</p>
-              <p className="text-muted-foreground">
-                {report.paddyLot.supplierName} - {report.paddyLot.variety}
-              </p>
-            </div>
+            {report.paddyLot && (
+              <>
+                <div>
+                  <p className="text-sm font-medium">Lot Number</p>
+                  <Link
+                    href={`/dashboard/lots/${report.paddyLot.id}`}
+                    className="text-emerald-700 hover:underline"
+                  >
+                    {report.paddyLot.lotNumber}
+                  </Link>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Mill</p>
+                  <p className="text-muted-foreground">{report.paddyLot.mill.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Supplier & Variety</p>
+                  <p className="text-muted-foreground">
+                    {report.paddyLot.supplierName} - {report.paddyLot.variety}
+                  </p>
+                </div>
+              </>
+            )}
+            {report.purchase && (
+              <div>
+                <p className="text-sm font-medium">Purchase</p>
+                <Link
+                  href={`/dashboard/purchases/${report.purchase.id}`}
+                  className="text-emerald-700 hover:underline"
+                >
+                  {report.purchase.purchaseNo}
+                </Link>
+                <p className="text-muted-foreground">{report.purchase.supplier.name}</p>
+              </div>
+            )}
+            {report.productionBatch && (
+              <div>
+                <p className="text-sm font-medium">Production Batch</p>
+                <Link
+                  href={`/dashboard/production/${report.productionBatch.id}`}
+                  className="text-emerald-700 hover:underline"
+                >
+                  {report.productionBatch.batchNo}
+                </Link>
+              </div>
+            )}
+            {!report.paddyLot && !report.purchase && !report.productionBatch && (
+              <p className="text-sm text-muted-foreground">No linked source.</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -138,26 +182,34 @@ export default async function ReportDetailPage({
           <CardTitle className="text-lg">Report Values</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Field</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Required</TableHead>
-                <TableHead>Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {report.template.fields.map((field) => (
-                <TableRow key={field.id}>
-                  <TableCell className="font-medium">{field.name}</TableCell>
-                  <TableCell>{field.type}</TableCell>
-                  <TableCell>{field.isRequired ? "Yes" : "No"}</TableCell>
-                  <TableCell>{valuesByFieldId.get(field.id) || "-"}</TableCell>
+          {report.status === "DRAFT" && !report.paddyLotId ? (
+            <InlineReportEditor
+              reportId={report.id}
+              template={report.template}
+              initialValues={Object.fromEntries(valuesByFieldId)}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Field</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Required</TableHead>
+                  <TableHead>Value</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {report.template.fields.map((field) => (
+                  <TableRow key={field.id}>
+                    <TableCell className="font-medium">{field.name}</TableCell>
+                    <TableCell>{field.type}</TableCell>
+                    <TableCell>{field.isRequired ? "Yes" : "No"}</TableCell>
+                    <TableCell>{valuesByFieldId.get(field.id) || "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

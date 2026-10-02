@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Users, Wallet } from "lucide-react"
 import { EmployeeTable } from "@/components/finance/employees/EmployeeTable"
+import { EntitySearch } from "@/components/ui/EntitySearch"
 import { formatCurrency } from "@/lib/utils"
 
-export default async function FinanceEmployeesPage() {
+export default async function FinanceEmployeesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ query?: string; page?: string; sort?: string; dir?: string }>
+}) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -16,8 +21,12 @@ export default async function FinanceEmployeesPage() {
     redirect("/dashboard")
   }
 
-  const [employees, stats] = await Promise.all([
-    getEmployeeList(undefined, true),
+  const params = await searchParams
+  const query = params.query || ""
+  const basePath = "/dashboard/finance/employees"
+
+  const [list, stats] = await Promise.all([
+    getEmployeeList({ search: query, includeInactive: true, page: params.page, sort: params.sort, dir: params.dir }),
     getEmployeeStats(),
   ])
 
@@ -55,9 +64,7 @@ export default async function FinanceEmployeesPage() {
             <Wallet className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">
-              {formatCurrency(stats.totalBasicPayroll)}
-            </div>
+            <div className="text-2xl font-semibold">{formatCurrency(stats.totalBasicPayroll)}</div>
             <p className="text-xs text-muted-foreground">Sum of active basic salaries</p>
           </CardContent>
         </Card>
@@ -66,15 +73,27 @@ export default async function FinanceEmployeesPage() {
             <CardTitle className="text-sm font-medium">Average Basic</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">
-              {formatCurrency(stats.averageBasicSalary)}
-            </div>
+            <div className="text-2xl font-semibold">{formatCurrency(stats.averageBasicSalary)}</div>
             <p className="text-xs text-muted-foreground">Per active employee</p>
           </CardContent>
         </Card>
       </div>
 
-      <EmployeeTable employees={employees} />
+      <div className="w-72">
+        <EntitySearch initialQuery={query} placeholder="Search employees..." />
+      </div>
+
+      <EmployeeTable
+        employees={list.items}
+        total={list.total}
+        page={list.page}
+        pageSize={list.pageSize}
+        totalPages={list.totalPages}
+        sort={list.sort}
+        dir={list.dir}
+        basePath={basePath}
+        searchParams={params}
+      />
     </div>
   )
 }

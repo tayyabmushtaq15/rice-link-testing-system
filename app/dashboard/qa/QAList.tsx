@@ -5,13 +5,7 @@ import { format } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table,
   TableBody,
@@ -20,6 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { SortableTableHead } from "@/components/ui/SortableTableHead"
+import { Pagination } from "@/components/ui/Pagination"
+import type { SortDir } from "@/lib/listQuery"
 
 type QAReport = {
   id: string
@@ -28,6 +25,11 @@ type QAReport = {
     lotNumber?: string | null
     mill?: { name?: string | null } | null
   } | null
+  purchase?: {
+    purchaseNo?: string | null
+    supplier?: { name?: string | null } | null
+  } | null
+  productionBatch?: { batchNo?: string | null } | null
   analyst?: { name?: string | null; email?: string | null } | null
   status?: string | null
   submissionDate?: string | Date | null
@@ -56,7 +58,31 @@ function formatDate(value?: string | Date | null) {
   return format(parsed, "MMM dd, yyyy")
 }
 
-export default function QAList({ reports }: { reports: QAReport[] }) {
+type QAListProps = {
+  reports: QAReport[]
+  statusCounts: { pending: number; approved: number; rejected: number }
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  sort: string
+  dir: SortDir
+  basePath: string
+  searchParams: Record<string, string | string[] | undefined>
+}
+
+export default function QAList({
+  reports,
+  statusCounts,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  sort,
+  dir,
+  basePath,
+  searchParams,
+}: QAListProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
   async function postAction(url: string, body: Record<string, unknown>) {
@@ -79,10 +105,6 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
     }
   }
 
-  const pendingCount = reports.filter((report) => report.status === "SUBMITTED").length
-  const approvedCount = reports.filter((report) => report.status === "APPROVED").length
-  const rejectedCount = reports.filter((report) => report.status === "REJECTED").length
-
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
@@ -92,7 +114,7 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
             <CardDescription>Reports waiting for QA action</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{pendingCount}</div>
+            <div className="text-3xl font-semibold">{statusCounts.pending}</div>
           </CardContent>
         </Card>
 
@@ -102,7 +124,7 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
             <CardDescription>Reports already cleared by QA</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{approvedCount}</div>
+            <div className="text-3xl font-semibold">{statusCounts.approved}</div>
           </CardContent>
         </Card>
 
@@ -112,7 +134,7 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
             <CardDescription>Reports sent back with a reason</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{rejectedCount}</div>
+            <div className="text-3xl font-semibold">{statusCounts.rejected}</div>
           </CardContent>
         </Card>
       </div>
@@ -122,7 +144,8 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
           <div>
             <CardTitle>QA review queue</CardTitle>
             <CardDescription>
-              Submitted reports are actionable, while approved and rejected reports remain visible for audit tracking.
+              Submitted reports are actionable, while approved and rejected reports remain visible
+              for audit tracking.
             </CardDescription>
           </div>
         </CardHeader>
@@ -138,8 +161,23 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
                   <TableHead>Report</TableHead>
                   <TableHead>Mill / Lot</TableHead>
                   <TableHead>Analyst</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableTableHead
+                    label="Submitted"
+                    sortKey="submitted"
+                    currentSort={sort}
+                    currentDir={dir}
+                    basePath={basePath}
+                    searchParams={searchParams}
+                    defaultDir="desc"
+                  />
+                  <SortableTableHead
+                    label="Status"
+                    sortKey="status"
+                    currentSort={sort}
+                    currentDir={dir}
+                    basePath={basePath}
+                    searchParams={searchParams}
+                  />
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -150,16 +188,39 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
                   return (
                     <TableRow key={report.id}>
                       <TableCell>
-                        <div className="font-medium">{report.template?.name ?? "Untitled report"}</div>
-                        <div className="text-sm text-muted-foreground">{report.paddyLot?.lotNumber ?? "No lot assigned"}</div>
+                        <div className="font-medium">
+                          {report.template?.name ?? "Untitled report"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {report.paddyLot?.lotNumber ??
+                            report.purchase?.purchaseNo ??
+                            report.productionBatch?.batchNo ??
+                            "No source assigned"}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{report.paddyLot?.mill?.name ?? "Unknown mill"}</div>
-                        <div className="text-sm text-muted-foreground">Lot {report.paddyLot?.lotNumber ?? "—"}</div>
+                        <div className="font-medium">
+                          {report.paddyLot?.mill?.name ??
+                            report.purchase?.supplier?.name ??
+                            (report.productionBatch ? "Production" : "Unknown source")}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {report.paddyLot
+                            ? `Lot ${report.paddyLot.lotNumber ?? "—"}`
+                            : report.purchase
+                              ? `Purchase ${report.purchase.purchaseNo ?? "—"}`
+                              : report.productionBatch
+                                ? `Batch ${report.productionBatch.batchNo ?? "—"}`
+                                : "—"}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{report.analyst?.name ?? "Unknown analyst"}</div>
-                        <div className="text-sm text-muted-foreground">{report.analyst?.email ?? "—"}</div>
+                        <div className="font-medium">
+                          {report.analyst?.name ?? "Unknown analyst"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {report.analyst?.email ?? "—"}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{formatDate(report.submissionDate)}</div>
@@ -210,7 +271,9 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
                           </div>
                         ) : (
                           <div className="max-w-48 text-sm text-muted-foreground">
-                            {report.rejectionReason ? report.rejectionReason : "No further action required"}
+                            {report.rejectionReason
+                              ? report.rejectionReason
+                              : "No further action required"}
                           </div>
                         )}
                       </TableCell>
@@ -220,6 +283,14 @@ export default function QAList({ reports }: { reports: QAReport[] }) {
               </TableBody>
             </Table>
           )}
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            totalPages={totalPages}
+            basePath={basePath}
+            searchParams={searchParams}
+          />
         </CardContent>
       </Card>
     </div>

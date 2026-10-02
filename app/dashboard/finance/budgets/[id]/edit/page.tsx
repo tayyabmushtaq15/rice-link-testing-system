@@ -1,14 +1,10 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { getBudgetById } from "@/actions/finance/budgets"
-import { getCategories } from "@/actions/finance/categories"
+import { getAllCategories } from "@/actions/finance/categories"
 import { BudgetForm } from "@/components/finance/budgets/BudgetForm"
 
-export default async function EditBudgetPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditBudgetPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 
@@ -17,7 +13,7 @@ export default async function EditBudgetPage({
   }
 
   const { id } = await params
-  const [budget, categories] = await Promise.all([getBudgetById(id), getCategories()])
+  const [budget, categories] = await Promise.all([getBudgetById(id), getAllCategories()])
 
   return (
     <div className="space-y-6">

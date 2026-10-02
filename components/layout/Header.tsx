@@ -9,14 +9,18 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { auth, signOut } from "@/auth"
+import { MobileMenuButton } from "./MobileMenuButton"
 
 export async function Header() {
   const session = await auth()
 
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-6">
-      <div className="font-medium text-lg">Dashboard</div>
-      
+    <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6 gap-3">
+      <div className="flex items-center gap-2">
+        <MobileMenuButton />
+        <div className="font-medium text-lg">Dashboard</div>
+      </div>
+
       <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger className="relative h-8 w-8 rounded-full outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 hover:opacity-80 transition-opacity">
@@ -40,10 +44,13 @@ export async function Header() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="p-0">
-              <form action={async () => {
-                "use server"
-                await signOut()
-              }} className="w-full">
+              <form
+                action={async () => {
+                  "use server"
+                  await signOut()
+                }}
+                className="w-full"
+              >
                 <button className="w-full text-left px-2 py-1.5">Log out</button>
               </form>
             </DropdownMenuItem>

@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getCategories } from "@/actions/finance/categories"
+import { getAllCategories } from "@/actions/finance/categories"
 import { BudgetForm } from "@/components/finance/budgets/BudgetForm"
 
 export default async function NewBudgetPage() {
@@ -11,7 +11,7 @@ export default async function NewBudgetPage() {
     redirect("/dashboard")
   }
 
-  const categories = await getCategories()
+  const categories = await getAllCategories()
 
   return (
     <div className="space-y-6">

@@ -4,11 +4,7 @@ import { getIncomeById } from "@/actions/finance/income"
 import { IncomeForm } from "@/components/finance/income/IncomeForm"
 import { getPaddyLotsForSelect } from "@/actions/finance/lotPosting"
 
-export default async function EditIncomePage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function EditIncomePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
 

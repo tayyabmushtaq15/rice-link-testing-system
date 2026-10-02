@@ -17,7 +17,9 @@ export default async function NewSalaryPage() {
         <h1 className="text-3xl font-bold tracking-tight">Record Salary</h1>
         <p className="text-sm text-muted-foreground">Add a new salary record for an employee.</p>
       </div>
-      <SalaryForm employees={employees.map(e => ({ id: e.id, name: e.name, basicSalary: e.basicSalary }))} />
+      <SalaryForm
+        employees={employees.map((e) => ({ id: e.id, name: e.name, basicSalary: e.basicSalary }))}
+      />
     </div>
   )
 }

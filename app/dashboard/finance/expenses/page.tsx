@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils"
 export default async function FinanceExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string }>
+  searchParams: Promise<{ search?: string; category?: string; page?: string; sort?: string; dir?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -22,16 +22,19 @@ export default async function FinanceExpensesPage({
   }
 
   const params = await searchParams
-  const { expenses: expenseList } = await getExpenseList(
-    params.search,
-    params.category
-  )
+  const list = await getExpenseList({
+    search: params.search,
+    categoryId: params.category,
+    page: params.page,
+    sort: params.sort,
+    dir: params.dir,
+  })
   const stats = await getExpenseStats()
   const categories = await getAllCategories(false)
   const expensesByCategory = await getExpensesByCategory()
 
   const topCategory = expensesByCategory
-    .map(cat => ({
+    .map((cat) => ({
       name: cat.name,
       amount: cat.expenses.reduce((sum, exp) => sum + exp.amount, 0),
     }))
@@ -44,7 +47,9 @@ export default async function FinanceExpensesPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Expense Management</h1>
-          <p className="text-sm text-muted-foreground">Record and track all business expenses by category.</p>
+          <p className="text-sm text-muted-foreground">
+            Record and track all business expenses by category.
+          </p>
         </div>
         <Link href="/dashboard/finance/expenses/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
@@ -94,12 +99,57 @@ export default async function FinanceExpensesPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{topCategory?.name || "N/A"}</div>
-            <p className="text-xs text-muted-foreground">{topCategory ? formatCurrency(topCategory.amount) : "No data"}</p>
+            <p className="text-xs text-muted-foreground">
+              {topCategory ? formatCurrency(topCategory.amount) : "No data"}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <ExpenseTable expenses={expenseList} />
+      <form className="flex flex-wrap gap-3 items-end" method="get">
+        <div>
+          <label className="text-xs text-muted-foreground">Search</label>
+          <input
+            type="search"
+            name="search"
+            defaultValue={params.search || ""}
+            placeholder="Transaction no, vendor, invoice..."
+            className="mt-1 flex h-9 w-56 rounded-md border border-input bg-transparent px-3 text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Category</label>
+          <select
+            name="category"
+            defaultValue={params.category || ""}
+            className="mt-1 flex h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+          >
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <input type="hidden" name="sort" value={list.sort} />
+        <input type="hidden" name="dir" value={list.dir} />
+        <Button type="submit" variant="outline">
+          Filter
+        </Button>
+      </form>
+
+      <ExpenseTable
+        expenses={list.items}
+        total={list.total}
+        page={list.page}
+        pageSize={list.pageSize}
+        totalPages={list.totalPages}
+        sort={list.sort}
+        dir={list.dir}
+        basePath="/dashboard/finance/expenses"
+        searchParams={params}
+      />
     </div>
   )
 }

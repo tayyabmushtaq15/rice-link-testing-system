@@ -1,10 +1,4 @@
-import {
-  Document,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer"
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer"
 
 export type ReportPdfData = {
   id: string
@@ -20,6 +14,7 @@ export type ReportPdfData = {
   approvedAt: string
   submissionDate: string
   results: {
+    id: string
     name: string
     type: string
     value: string
@@ -28,7 +23,7 @@ export type ReportPdfData = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 36,
+    padding: 24,
     fontFamily: "Helvetica",
     fontSize: 10,
     color: "#16201a",
@@ -40,8 +35,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     borderBottomWidth: 1,
     borderBottomColor: "#d7e5dc",
-    paddingBottom: 18,
-    marginBottom: 20,
+    paddingBottom: 10,
+    marginBottom: 12,
   },
   brand: {
     flexDirection: "row",
@@ -80,14 +75,14 @@ const styles = StyleSheet.create({
     color: "#5f6f65",
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: "bold",
     textTransform: "uppercase",
     color: "#0f7a52",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   detailsGrid: {
     flexDirection: "row",
@@ -97,7 +92,7 @@ const styles = StyleSheet.create({
   },
   detailCell: {
     width: "50%",
-    padding: 9,
+    padding: 6,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
     borderBottomWidth: 1,
@@ -119,7 +114,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    minHeight: 28,
+    minHeight: 21,
     borderBottomWidth: 1,
     borderBottomColor: "#d7e5dc",
   },
@@ -128,19 +123,19 @@ const styles = StyleSheet.create({
   },
   fieldCol: {
     width: "52%",
-    padding: 8,
+    padding: 5,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   typeCol: {
     width: "18%",
-    padding: 8,
+    padding: 5,
     borderRightWidth: 1,
     borderRightColor: "#d7e5dc",
   },
   valueCol: {
     width: "30%",
-    padding: 8,
+    padding: 5,
   },
   headerText: {
     fontSize: 9,
@@ -157,7 +152,7 @@ const styles = StyleSheet.create({
   approvalCell: {
     width: "50%",
     padding: 10,
-    minHeight: 54,
+    minHeight: 42,
     justifyContent: "space-between",
   },
   approvalDivider: {
@@ -165,7 +160,7 @@ const styles = StyleSheet.create({
     borderRightColor: "#d7e5dc",
   },
   signatureLine: {
-    marginTop: 16,
+    marginTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#809289",
     paddingTop: 5,
@@ -174,10 +169,10 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: "absolute",
-    left: 36,
-    right: 36,
-    bottom: 24,
-    paddingTop: 8,
+    left: 24,
+    right: 24,
+    bottom: 14,
+    paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: "#d7e5dc",
     color: "#7b8981",
@@ -243,7 +238,7 @@ export function ReportPdfDocument({ report }: { report: ReportPdfData }) {
               </View>
             </View>
             {report.results.map((result) => (
-              <View key={result.name} style={styles.tableRow} wrap={false}>
+              <View key={result.id} style={styles.tableRow} wrap={false}>
                 <View style={styles.fieldCol}>
                   <Text>{result.name}</Text>
                 </View>

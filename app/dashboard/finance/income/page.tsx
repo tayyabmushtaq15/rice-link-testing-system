@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/utils"
 export default async function FinanceIncomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; page?: string; sort?: string; dir?: string }>
 }) {
   const session = await auth()
   const allowedRoles = ["ADMIN", "FINANCE_MANAGER"]
@@ -21,7 +21,12 @@ export default async function FinanceIncomePage({
   }
 
   const params = await searchParams
-  const { income: incomeList } = await getIncomeList(params.search)
+  const list = await getIncomeList({
+    search: params.search,
+    page: params.page,
+    sort: params.sort,
+    dir: params.dir,
+  })
   const stats = await getIncomeStats()
 
   return (
@@ -29,7 +34,9 @@ export default async function FinanceIncomePage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Income Management</h1>
-          <p className="text-sm text-muted-foreground">Record and track all business income sources.</p>
+          <p className="text-sm text-muted-foreground">
+            Record and track all business income sources.
+          </p>
         </div>
         <Link href="/dashboard/finance/income/new">
           <Button className="bg-emerald-600 hover:bg-emerald-700">
@@ -74,7 +81,35 @@ export default async function FinanceIncomePage({
         </Card>
       </div>
 
-      <IncomeTable incomeList={incomeList} />
+      <form className="flex flex-wrap gap-3 items-end" method="get">
+        <div>
+          <label className="text-xs text-muted-foreground">Search</label>
+          <input
+            type="search"
+            name="search"
+            defaultValue={params.search || ""}
+            placeholder="Transaction no, source, reference..."
+            className="mt-1 flex h-9 w-64 rounded-md border border-input bg-transparent px-3 text-sm"
+          />
+        </div>
+        <input type="hidden" name="sort" value={list.sort} />
+        <input type="hidden" name="dir" value={list.dir} />
+        <Button type="submit" variant="outline">
+          Filter
+        </Button>
+      </form>
+
+      <IncomeTable
+        incomeList={list.items}
+        total={list.total}
+        page={list.page}
+        pageSize={list.pageSize}
+        totalPages={list.totalPages}
+        sort={list.sort}
+        dir={list.dir}
+        basePath="/dashboard/finance/income"
+        searchParams={params}
+      />
     </div>
   )
 }

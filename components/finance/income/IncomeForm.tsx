@@ -28,11 +28,22 @@ import {
 
 const formSchema = z.object({
   date: z.coerce.date(),
-  source: z.string().min(2, "Source must be at least 2 characters").max(100, "Source must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional().or(z.literal("")),
+  source: z
+    .string()
+    .min(2, "Source must be at least 2 characters")
+    .max(100, "Source must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   paymentMethod: z.string().min(1, "Payment method is required"),
-  referenceNumber: z.string().max(100, "Reference number must be less than 100 characters").optional().or(z.literal("")),
+  referenceNumber: z
+    .string()
+    .max(100, "Reference number must be less than 100 characters")
+    .optional()
+    .or(z.literal("")),
   notes: z.string().max(500, "Notes must be less than 500 characters").optional().or(z.literal("")),
   paddyLotId: z.string().optional().or(z.literal("")),
 })
@@ -105,11 +116,7 @@ export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
             {initialData?.transactionNo && (
               <div className="rounded-md bg-slate-50 p-4 text-sm">
@@ -125,10 +132,12 @@ export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps
                 <FormItem>
                   <FormLabel>Date *</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="date" 
+                    <Input
+                      type="date"
                       {...field}
-                      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                      value={
+                        field.value instanceof Date ? field.value.toISOString().split("T")[0] : ""
+                      }
                       onChange={(e) => field.onChange(new Date(e.target.value))}
                     />
                   </FormControl>
@@ -211,10 +220,10 @@ export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <textarea 
-                      placeholder="Optional description for this income" 
+                    <textarea
+                      placeholder="Optional description for this income"
                       className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:border-slate-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -272,10 +281,10 @@ export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <textarea 
-                      placeholder="Any additional notes" 
+                    <textarea
+                      placeholder="Any additional notes"
                       className="flex min-h-[60px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:border-slate-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -284,17 +293,10 @@ export function IncomeForm({ initialData, incomeId, lots = [] }: IncomeFormProps
             />
 
             <div className="flex gap-4">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : initialData ? "Update Income" : "Record Income"}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => router.back()}
-              >
+              <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
             </div>

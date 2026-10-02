@@ -19,15 +19,23 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const reportFormSchema = z.object({
   paddyLotId: z.string().min(1, "Paddy lot is required"),
   templateId: z.string().min(1, "Report template is required"),
-  values: z.array(z.object({
-    templateFieldId: z.string().min(1),
-    value: z.string(),
-  })),
+  values: z.array(
+    z.object({
+      templateFieldId: z.string().min(1),
+      value: z.string(),
+    }),
+  ),
 })
 
 type ReportFormValues = z.infer<typeof reportFormSchema>
@@ -105,7 +113,7 @@ export function ReportForm({ lots, templates, initialData }: ReportFormProps) {
   const selectedLotId = form.watch("paddyLotId")
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedTemplateId),
-    [selectedTemplateId, templates]
+    [selectedTemplateId, templates],
   )
 
   useEffect(() => {
@@ -160,11 +168,7 @@ export function ReportForm({ lots, templates, initialData }: ReportFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Paddy Lot</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={!isEditable}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!isEditable}>
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a paddy lot">
@@ -193,11 +197,7 @@ export function ReportForm({ lots, templates, initialData }: ReportFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Report Template</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={!isEditable}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!isEditable}>
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a template">
@@ -293,7 +293,12 @@ export function ReportForm({ lots, templates, initialData }: ReportFormProps) {
               </Button>
             </>
           )}
-          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSaving || isSubmitting}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSaving || isSubmitting}
+          >
             Cancel
           </Button>
         </div>

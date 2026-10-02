@@ -20,8 +20,15 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional().or(z.literal("")),
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be less than 100 characters"),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional()
+    .or(z.literal("")),
 })
 
 type CategoryFormValues = z.infer<typeof formSchema>
@@ -73,11 +80,7 @@ export function CategoryForm({ initialData, categoryId }: CategoryFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
             <FormField
               control={form.control}
@@ -100,10 +103,10 @@ export function CategoryForm({ initialData, categoryId }: CategoryFormProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <textarea 
-                      placeholder="Optional description for this category" 
+                    <textarea
+                      placeholder="Optional description for this category"
                       className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:border-slate-300 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -112,17 +115,10 @@ export function CategoryForm({ initialData, categoryId }: CategoryFormProps) {
             />
 
             <div className="flex gap-4">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-              >
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : initialData ? "Update Category" : "Create Category"}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => router.back()}
-              >
+              <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
             </div>

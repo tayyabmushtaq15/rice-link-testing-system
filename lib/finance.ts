@@ -22,6 +22,8 @@ export const FINANCE_SOURCE = {
   LOT_PADDY: "LOT_PADDY",
   LOT_PROCESSING: "LOT_PROCESSING",
   SALARY: "SALARY",
+  PRODUCTION_PROCESSING: "PRODUCTION_PROCESSING",
+  SALE: "SALE",
 } as const
 
 export type FinanceSourceType = (typeof FINANCE_SOURCE)[keyof typeof FINANCE_SOURCE]

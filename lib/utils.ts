@@ -13,7 +13,10 @@ export function formatCurrency(value: number) {
   }).format(value || 0)
 }
 
-export function downloadCsv(filename: string, rows: Record<string, string | number | null | undefined>[]) {
+export function downloadCsv(
+  filename: string,
+  rows: Record<string, string | number | null | undefined>[],
+) {
   if (rows.length === 0) return
   const headers = Object.keys(rows[0])
   const escape = (value: string | number | null | undefined) => {

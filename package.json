@@ -1,5 +1,5 @@
 {
-  "name": "temp-app",
+  "name": "ricely-erp",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -39,6 +39,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.19",
+    "prettier": "^3.9.6",
     "prisma": "^6.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"

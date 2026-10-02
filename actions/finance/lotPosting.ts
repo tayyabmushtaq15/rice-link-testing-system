@@ -68,7 +68,7 @@ export async function getLotsFinancePostingStatus() {
       lot.financeExpenses.some(
         (e) =>
           e.sourceType === FINANCE_SOURCE.LOT_PADDY ||
-          e.sourceType === FINANCE_SOURCE.LOT_PROCESSING
+          e.sourceType === FINANCE_SOURCE.LOT_PROCESSING,
       )
 
     return {
@@ -97,7 +97,8 @@ export async function postLotToFinance(paddyLotId: string) {
   })
 
   if (!lot) throw new Error("Paddy lot not found")
-  if (!lot.productionOutput) throw new Error("Production output is required before posting to finance")
+  if (!lot.productionOutput)
+    throw new Error("Production output is required before posting to finance")
 
   if (await isLotPostedToFinance(paddyLotId)) {
     throw new Error("This lot has already been posted to finance")

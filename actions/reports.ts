@@ -4,6 +4,20 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { validateFieldValue } from "@/lib/reportValidation"
+import { paginate, parseListQuery, withTiebreak, type SortDir } from "@/lib/listQuery"
+import type { Prisma } from "@prisma/client"
+
+const REPORT_SORT_KEYS = ["updated", "status"] as const
+type ReportSortKey = (typeof REPORT_SORT_KEYS)[number]
+
+function reportOrderBy(sort: ReportSortKey, dir: SortDir) {
+  const primary: Record<ReportSortKey, Prisma.ReportOrderByWithRelationInput> = {
+    updated: { updatedAt: dir },
+    status: { status: dir },
+  }
+  return withTiebreak(primary[sort], dir)
+}
 
 const reportValueSchema = z.object({
   templateFieldId: z.string().min(1, "Template field is required"),
@@ -29,39 +43,14 @@ async function getSessionUser() {
 
 async function checkAnalystOrAdmin() {
   const user = await getSessionUser()
-  if (!['ANALYST', 'ADMIN'].includes(user.role)) {
+  if (!["ANALYST", "ADMIN"].includes(user.role)) {
     throw new Error("Unauthorized: Only Analysts or Admins can manage reports")
   }
 
   return user
 }
 
-function validateFieldValue(
-  value: string,
-  field: { name: string; type: string; isRequired: boolean },
-  requireValue: boolean
-) {
-  const trimmedValue = value.trim()
-
-  if ((field.isRequired || requireValue) && !trimmedValue) {
-    throw new Error(`${field.name} is required`)
-  }
-
-  if (!trimmedValue) return
-
-  if (field.type === "NUMBER" || field.type === "PERCENTAGE") {
-    const parsedValue = Number(trimmedValue)
-    if (Number.isNaN(parsedValue)) {
-      throw new Error(`${field.name} must be a valid number`)
-    }
-
-    if (field.type === "PERCENTAGE" && (parsedValue < 0 || parsedValue > 100)) {
-      throw new Error(`${field.name} must be between 0 and 100`)
-    }
-  }
-}
-
-async function getValidatedReportPayload(data: ReportEntryFormValues, requireRequiredValues: boolean) {
+async function getValidatedReportPayload(data: ReportEntryFormValues) {
   const parsedData = reportEntrySchema.parse(data)
   const template = await prisma.reportTemplate.findFirst({
     where: { id: parsedData.templateId, isActive: true },
@@ -86,12 +75,12 @@ async function getValidatedReportPayload(data: ReportEntryFormValues, requireReq
   }
 
   const valuesByFieldId = new Map(
-    parsedData.values.map((value) => [value.templateFieldId, value.value])
+    parsedData.values.map((value) => [value.templateFieldId, value.value]),
   )
 
   const values = template.fields.map((field) => {
     const value = valuesByFieldId.get(field.id) ?? ""
-    validateFieldValue(value, field, requireRequiredValues)
+    validateFieldValue(value, field)
 
     return {
       templateFieldId: field.id,
@@ -116,7 +105,7 @@ async function assertEditableReport(reportId: string, user: { id: string; role: 
     throw new Error("Report not found")
   }
 
-  if (user.role !== 'ADMIN' && report.analystId !== user.id) {
+  if (user.role !== "ADMIN" && report.analystId !== user.id) {
     throw new Error("Unauthorized: You can only manage your own reports")
   }
 
@@ -125,9 +114,64 @@ async function assertEditableReport(reportId: string, user: { id: string; role: 
   }
 }
 
+// For reports linked to a Purchase or Production batch instead of a PaddyLot — the standalone
+// ReportForm (paddyLot + template picker) doesn't apply to them, so they need their own path to
+// fill in remaining values and move a draft to QA.
+async function applyReportValues(
+  reportId: string,
+  values: { templateFieldId: string; value: string }[],
+  user: { id: string; role: string },
+  markSubmitted: boolean,
+) {
+  await assertEditableReport(reportId, user)
+  const report = await prisma.report.findUnique({
+    where: { id: reportId },
+    include: { template: { include: { fields: true } } },
+  })
+  if (!report) throw new Error("Report not found")
+
+  const valuesByFieldId = new Map(values.map((value) => [value.templateFieldId, value.value]))
+  const finalValues = report.template.fields.map((field) => {
+    const raw = valuesByFieldId.get(field.id) ?? ""
+    validateFieldValue(raw, field)
+    return { templateFieldId: field.id, value: raw.trim() }
+  })
+
+  await prisma.$transaction(async (tx) => {
+    await tx.reportValue.deleteMany({ where: { reportId } })
+    await tx.report.update({
+      where: { id: reportId },
+      data: {
+        status: markSubmitted ? "SUBMITTED" : "DRAFT",
+        submissionDate: markSubmitted ? new Date() : null,
+        values: { create: finalValues },
+      },
+    })
+  })
+
+  revalidatePath("/dashboard/reports")
+  revalidatePath(`/dashboard/reports/${reportId}`)
+}
+
+export async function updateReportValues(
+  reportId: string,
+  values: { templateFieldId: string; value: string }[],
+) {
+  const user = await checkAnalystOrAdmin()
+  await applyReportValues(reportId, values, user, false)
+}
+
+export async function submitExistingReport(
+  reportId: string,
+  values: { templateFieldId: string; value: string }[],
+) {
+  const user = await checkAnalystOrAdmin()
+  await applyReportValues(reportId, values, user, true)
+}
+
 export async function saveDraftReport(data: ReportEntryFormValues, reportId?: string) {
   const user = await checkAnalystOrAdmin()
-  const payload = await getValidatedReportPayload(data, false)
+  const payload = await getValidatedReportPayload(data)
 
   const report = await prisma.$transaction(async (tx) => {
     if (reportId) {
@@ -174,7 +218,7 @@ export async function saveDraftReport(data: ReportEntryFormValues, reportId?: st
 
 export async function submitReportToQA(data: ReportEntryFormValues, reportId?: string) {
   const user = await checkAnalystOrAdmin()
-  const payload = await getValidatedReportPayload(data, true)
+  const payload = await getValidatedReportPayload(data)
 
   const report = await prisma.$transaction(async (tx) => {
     if (reportId) {
@@ -220,41 +264,68 @@ export async function submitReportToQA(data: ReportEntryFormValues, reportId?: s
   return report
 }
 
-export async function getReports() {
+export async function getReports(params: { page?: string; sort?: string; dir?: string } = {}) {
   const user = await checkAnalystOrAdmin()
+  const whereClause = user.role === "ADMIN" ? undefined : { analystId: user.id }
 
-  return prisma.report.findMany({
-    where: user.role === 'ADMIN' ? undefined : { analystId: user.id },
-    include: {
-      paddyLot: {
+  const { sort, dir } = parseListQuery(params, {
+    allowedSorts: REPORT_SORT_KEYS,
+    defaultSort: "updated",
+    defaultDir: "desc",
+  })
+  const orderBy = reportOrderBy(sort, dir)
+
+  const result = await paginate(
+    () => prisma.report.count({ where: whereClause }),
+    ({ skip, take }) =>
+      prisma.report.findMany({
+        where: whereClause,
         include: {
-          mill: {
+          paddyLot: {
+            include: {
+              mill: {
+                select: { name: true },
+              },
+            },
+          },
+          purchase: {
+            select: { purchaseNo: true, supplier: { select: { name: true } } },
+          },
+          productionBatch: {
+            select: { batchNo: true },
+          },
+          template: {
             select: { name: true },
           },
+          _count: {
+            select: { values: true },
+          },
         },
-      },
-      template: {
-        select: { name: true },
-      },
-      _count: {
-        select: { values: true },
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-  })
+        orderBy,
+        skip,
+        take,
+      }),
+    Number(params.page) || 1,
+  )
+
+  return { ...result, sort, dir }
 }
 
 export async function getReport(id: string) {
   const user = await checkAnalystOrAdmin()
 
   return prisma.report.findFirst({
-    where: user.role === 'ADMIN' ? { id } : { id, analystId: user.id },
+    where: user.role === "ADMIN" ? { id } : { id, analystId: user.id },
     include: {
       paddyLot: {
         include: {
           mill: true,
         },
       },
+      purchase: {
+        include: { supplier: true },
+      },
+      productionBatch: true,
       template: {
         include: {
           fields: {

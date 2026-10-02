@@ -134,7 +134,7 @@ export function MillForm({ initialData, millId }: MillFormProps) {
                 )}
               />
             </div>
-            
+
             <FormField
               control={form.control}
               name="address"
@@ -150,10 +150,19 @@ export function MillForm({ initialData, millId }: MillFormProps) {
             />
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
                 {isSubmitting ? "Saving..." : "Save Mill"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
             </div>

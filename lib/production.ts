@@ -52,7 +52,7 @@ function roundPercent(value: number) {
 
 export function calculateProductionSummary(
   output: ProductionOutputFormValues,
-  purchaseRate = 0
+  purchaseRate = 0,
 ): ProductionSummary {
   const saleableOutput = output.rice + output.brokenRice + output.husk + output.polish
   const totalOutput = saleableOutput + output.waste + output.shortage
@@ -94,6 +94,7 @@ export function calculateProductionSummary(
     costPerRiceKg: output.rice > 0 ? roundPercent(totalLotCost / output.rice) : 0,
     expectedSaleValue,
     grossProfit,
-    profitMarginPercent: expectedSaleValue > 0 ? roundPercent((grossProfit / expectedSaleValue) * 100) : 0,
+    profitMarginPercent:
+      expectedSaleValue > 0 ? roundPercent((grossProfit / expectedSaleValue) * 100) : 0,
   }
 }

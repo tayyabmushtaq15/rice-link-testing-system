@@ -70,8 +70,7 @@ export async function getSalaryReport(month?: string, year?: number) {
   const where: { month?: string; year?: number } = {}
   if (month) {
     const monthIndex = MONTHS.findIndex((m) => m === month)
-    where.month =
-      monthIndex >= 0 ? String(monthIndex + 1).padStart(2, "0") : month
+    where.month = monthIndex >= 0 ? String(monthIndex + 1).padStart(2, "0") : month
   }
   if (year) where.year = year
 
@@ -136,7 +135,7 @@ export async function getLotProfitabilityReport() {
       lot.financeExpenses.some(
         (e) =>
           e.sourceType === FINANCE_SOURCE.LOT_PADDY ||
-          e.sourceType === FINANCE_SOURCE.LOT_PROCESSING
+          e.sourceType === FINANCE_SOURCE.LOT_PROCESSING,
       )
 
     return {

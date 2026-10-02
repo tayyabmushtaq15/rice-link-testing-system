@@ -30,10 +30,7 @@ export default async function EditCategoryPage({ params }: EditCategoryPageProps
         <h1 className="text-3xl font-bold tracking-tight">Edit Category</h1>
         <p className="text-sm text-muted-foreground">Update the category details.</p>
       </div>
-      <CategoryForm 
-        initialData={category} 
-        categoryId={params.id}
-      />
+      <CategoryForm initialData={category} categoryId={params.id} />
     </div>
   )
 }

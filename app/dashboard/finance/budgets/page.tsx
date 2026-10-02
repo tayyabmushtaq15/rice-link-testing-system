@@ -23,14 +23,13 @@ export default async function FinanceBudgetsPage({
 
   const params = await searchParams
   const current = getCurrentMonthYear()
-  const month = params.month && MONTHS.includes(params.month as (typeof MONTHS)[number])
-    ? params.month
-    : current.month
+  const month =
+    params.month && MONTHS.includes(params.month as (typeof MONTHS)[number])
+      ? params.month
+      : current.month
   const year = params.year ? Number(params.year) : current.year
 
-  const [budgetData] = await Promise.all([
-    getBudgetVsActual(month, year),
-  ])
+  const [budgetData] = await Promise.all([getBudgetVsActual(month, year)])
 
   return (
     <div className="space-y-6">

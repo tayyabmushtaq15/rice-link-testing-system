@@ -70,9 +70,7 @@ export function BudgetTable({ rows }: BudgetTableProps) {
         <CardTitle>Budget vs Actual</CardTitle>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
-        )}
+        {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

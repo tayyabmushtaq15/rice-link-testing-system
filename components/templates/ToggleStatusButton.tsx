@@ -5,12 +5,12 @@ import { toggleTemplateStatus } from "@/actions/templates"
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-export function ToggleStatusButton({ id, isActive }: { id: string, isActive: boolean }) {
+export function ToggleStatusButton({ id, isActive }: { id: string; isActive: boolean }) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
   return (
-    <Switch 
+    <Switch
       checked={isActive}
       disabled={isPending}
       onCheckedChange={() => {

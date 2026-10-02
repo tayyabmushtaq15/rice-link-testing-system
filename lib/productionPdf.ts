@@ -45,12 +45,32 @@ export function buildProductionPdfData(lot: ProductionPdfSource): ProductionPdfD
     purchaseRate: formatMoney(lot.purchaseRate),
     paddyCost: formatMoney(summary.paddyCost),
     outputRows: [
-      { label: "Rice", weight: formatKg(output.rice), percent: formatPercent(summary.riceRecoveryPercent) },
-      { label: "Broken Rice", weight: formatKg(output.brokenRice), percent: formatPercent(summary.brokenPercent) },
+      {
+        label: "Rice",
+        weight: formatKg(output.rice),
+        percent: formatPercent(summary.riceRecoveryPercent),
+      },
+      {
+        label: "Broken Rice",
+        weight: formatKg(output.brokenRice),
+        percent: formatPercent(summary.brokenPercent),
+      },
       { label: "Husk", weight: formatKg(output.husk), percent: formatPercent(summary.huskPercent) },
-      { label: "Polish / Bran", weight: formatKg(output.polish), percent: formatPercent(summary.polishPercent) },
-      { label: "Waste", weight: formatKg(output.waste), percent: formatPercent(summary.wastePercent) },
-      { label: "Shortage / Moisture Loss", weight: formatKg(output.shortage), percent: formatPercent(summary.shortagePercent) },
+      {
+        label: "Polish / Bran",
+        weight: formatKg(output.polish),
+        percent: formatPercent(summary.polishPercent),
+      },
+      {
+        label: "Waste",
+        weight: formatKg(output.waste),
+        percent: formatPercent(summary.wastePercent),
+      },
+      {
+        label: "Shortage / Moisture Loss",
+        weight: formatKg(output.shortage),
+        percent: formatPercent(summary.shortagePercent),
+      },
     ],
     costRows: [
       { label: "Paddy Cost", amount: formatMoney(summary.paddyCost) },

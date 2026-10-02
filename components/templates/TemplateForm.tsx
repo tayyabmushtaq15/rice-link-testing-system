@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Trash2, Plus, ArrowUp, ArrowDown } from "lucide-react"
 
@@ -26,6 +32,7 @@ const templateFieldSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Field name is required"),
   type: z.enum(["NUMBER", "PERCENTAGE", "TEXT"]),
+  section: z.string().optional().nullable(),
   isRequired: z.boolean().default(true),
 })
 
@@ -33,6 +40,8 @@ const reportTemplateSchema = z.object({
   name: z.string().min(2, "Template name must be at least 2 characters"),
   description: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
+  attachTo: z.enum(["PURCHASE", "PRODUCTION"]).default("PURCHASE"),
+  appliesToProductType: z.string().optional().nullable(),
   fields: z.array(templateFieldSchema).min(1, "At least one field is required"),
 })
 
@@ -51,14 +60,20 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<ReportTemplateFormValues, unknown, ReportTemplateFormValues>({
-    resolver: zodResolver(reportTemplateSchema) as Resolver<ReportTemplateFormValues, unknown, ReportTemplateFormValues>,
+    resolver: zodResolver(reportTemplateSchema) as Resolver<
+      ReportTemplateFormValues,
+      unknown,
+      ReportTemplateFormValues
+    >,
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",
       isActive: initialData?.isActive ?? true,
-      fields: initialData?.fields?.length ? initialData.fields : [
-        { name: "", type: "NUMBER", isRequired: true }
-      ],
+      attachTo: initialData?.attachTo || "PURCHASE",
+      appliesToProductType: initialData?.appliesToProductType || "",
+      fields: initialData?.fields?.length
+        ? initialData.fields
+        : [{ name: "", type: "NUMBER", section: "", isRequired: true }],
     },
   })
 
@@ -90,9 +105,7 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
         <Card>
           <CardHeader>
             <CardTitle>{initialData ? "Edit Template" : "Create New Template"}</CardTitle>
-            <CardDescription>
-              Define the metadata for this report template.
-            </CardDescription>
+            <CardDescription>Define the metadata for this report template.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -115,7 +128,11 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="What is this report used for?" {...field} value={field.value || ""} />
+                    <Input
+                      placeholder="What is this report used for?"
+                      {...field}
+                      value={field.value || ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,14 +150,65 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                     </div>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="attachTo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Filled during</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue>
+                            {field.value === "PRODUCTION" ? "Production batch entry" : "Purchase entry"}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="PURCHASE">Purchase entry</SelectItem>
+                        <SelectItem value="PRODUCTION">Production batch entry</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="appliesToProductType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Applies to product type</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "ANY" ? "" : value)}
+                      value={field.value || "ANY"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ANY">Any product</SelectItem>
+                        <SelectItem value="RAW_MATERIAL">Raw Material</SelectItem>
+                        <SelectItem value="FINISHED_GOOD">Finished Good</SelectItem>
+                        <SelectItem value="PACKAGING">Packaging</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-muted-foreground">
+                      Only used when filled during purchase entry.
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -154,7 +222,7 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => append({ name: "", type: "NUMBER", isRequired: true })}
+              onClick={() => append({ name: "", type: "NUMBER", section: "", isRequired: true })}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Field
@@ -166,24 +234,27 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                 {form.formState.errors.fields.root.message}
               </p>
             )}
-            
+
             {fields.map((field, index) => (
-              <div key={field.id} className="flex items-start gap-4 p-4 border rounded-md bg-slate-50">
+              <div
+                key={field.id}
+                className="flex items-start gap-4 p-4 border rounded-md bg-slate-50"
+              >
                 <div className="flex flex-col gap-1 mt-6">
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
                     disabled={index === 0}
                     onClick={() => move(index, index - 1)}
                   >
                     <ArrowUp className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     className="h-6 w-6"
                     disabled={index === fields.length - 1}
                     onClick={() => move(index, index + 1)}
@@ -191,13 +262,13 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                     <ArrowDown className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1">
                   <FormField
                     control={form.control}
                     name={`fields.${index}.name`}
                     render={({ field: nameField }) => (
-                      <FormItem className="md:col-span-5">
+                      <FormItem className="md:col-span-3">
                         <FormLabel>Field Name</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. Paddy Broken" {...nameField} />
@@ -206,18 +277,40 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                       </FormItem>
                     )}
                   />
-                  
+
+                  <FormField
+                    control={form.control}
+                    name={`fields.${index}.section`}
+                    render={({ field: sectionField }) => (
+                      <FormItem className="md:col-span-3">
+                        <FormLabel>Section</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g. Input"
+                            {...sectionField}
+                            value={sectionField.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name={`fields.${index}.type`}
                     render={({ field: typeField }) => (
-                      <FormItem className="md:col-span-4">
+                      <FormItem className="md:col-span-3">
                         <FormLabel>Data Type</FormLabel>
                         <Select onValueChange={typeField.onChange} value={typeField.value}>
                           <FormControl>
                             <SelectTrigger className="bg-white">
                               <SelectValue placeholder="Select type">
-                                {typeField.value === "NUMBER" ? "Number" : typeField.value === "PERCENTAGE" ? "Percentage" : "Text"}
+                                {typeField.value === "NUMBER"
+                                  ? "Number"
+                                  : typeField.value === "PERCENTAGE"
+                                    ? "Percentage"
+                                    : "Text"}
                               </SelectValue>
                             </SelectTrigger>
                           </FormControl>
@@ -249,9 +342,9 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                   />
 
                   <div className="md:col-span-1 flex flex-col justify-end pb-1.5">
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
+                    <Button
+                      type="button"
+                      variant="destructive"
                       size="icon"
                       onClick={() => remove(index)}
                       disabled={fields.length === 1}
@@ -262,7 +355,7 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
                 </div>
               </div>
             ))}
-            
+
             {fields.length === 0 && (
               <div className="text-center py-8 text-muted-foreground border border-dashed rounded-md">
                 No fields added. Click &quot;Add Field&quot; to start.
@@ -272,10 +365,19 @@ export function TemplateForm({ initialData, templateId }: TemplateFormProps) {
         </Card>
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
             {isSubmitting ? "Saving..." : "Save Template"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
         </div>

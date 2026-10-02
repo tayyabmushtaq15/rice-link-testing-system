@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon } from "lucide-react"
@@ -31,12 +37,18 @@ const formSchema = z.object({
   cropYear: z.string().min(4, "Crop year is required"),
   purchaseDate: z.date(),
   weight: z.coerce.number().min(0.1, "Weight must be greater than 0"),
-  moisture: z.coerce.number().min(0, "Moisture cannot be negative").max(100, "Moisture cannot exceed 100%"),
+  moisture: z.coerce
+    .number()
+    .min(0, "Moisture cannot be negative")
+    .max(100, "Moisture cannot exceed 100%"),
   purchaseRate: z.coerce.number().min(0, "Purchase rate cannot be negative"),
   status: z.enum(["OPEN", "PROCESSING", "COMPLETED"]).default("OPEN"),
 })
 
-type PaddyLotFormInput = Omit<z.input<typeof formSchema>, "weight" | "moisture" | "purchaseRate"> & {
+type PaddyLotFormInput = Omit<
+  z.input<typeof formSchema>,
+  "weight" | "moisture" | "purchaseRate"
+> & {
   weight: number
   moisture: number
   purchaseRate: number
@@ -60,9 +72,7 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
       supplierName: initialData?.supplierName || "",
       variety: initialData?.variety || "",
       cropYear: initialData?.cropYear || new Date().getFullYear().toString(),
-      purchaseDate: initialData?.purchaseDate
-        ? new Date(initialData.purchaseDate)
-        : new Date(),
+      purchaseDate: initialData?.purchaseDate ? new Date(initialData.purchaseDate) : new Date(),
       weight: initialData?.weight || 0,
       moisture: initialData?.moisture || 0,
       purchaseRate: initialData?.purchaseRate || 0,
@@ -96,7 +106,6 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
               <FormField
                 control={form.control}
                 name="millId"
@@ -107,7 +116,9 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a mill">
-                            {field.value ? mills.find((m) => m.id === field.value)?.name : "Select a mill"}
+                            {field.value
+                              ? mills.find((m) => m.id === field.value)?.name
+                              : "Select a mill"}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
@@ -174,10 +185,10 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                     <FormLabel>Purchase Date</FormLabel>
                     <Popover>
                       <FormControl>
-                        <PopoverTrigger 
+                        <PopoverTrigger
                           className={cn(
                             "flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
                           {field.value ? (
@@ -193,9 +204,7 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
+                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                         />
                       </PopoverContent>
                     </Popover>
@@ -212,11 +221,11 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                     <FormLabel>Weight (KG)</FormLabel>
                     <FormControl>
                       <Input
-                      type="number"
-                      step="0.1"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
+                        type="number"
+                        step="0.1"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,10 +240,10 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                     <FormLabel>Moisture (%)</FormLabel>
                     <FormControl>
                       <Input
-                      type="number"
-                      step="0.1"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                        type="number"
+                        step="0.1"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -250,11 +259,11 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                     <FormLabel>Purchase Rate</FormLabel>
                     <FormControl>
                       <Input
-                      type="number"
-                      step="0.01"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
+                        type="number"
+                        step="0.01"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -272,7 +281,13 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status">
-                              {field.value === "OPEN" ? "Open" : field.value === "PROCESSING" ? "Processing" : field.value === "COMPLETED" ? "Completed" : "Select status"}
+                              {field.value === "OPEN"
+                                ? "Open"
+                                : field.value === "PROCESSING"
+                                  ? "Processing"
+                                  : field.value === "COMPLETED"
+                                    ? "Completed"
+                                    : "Select status"}
                             </SelectValue>
                           </SelectTrigger>
                         </FormControl>
@@ -287,14 +302,22 @@ export function PaddyLotForm({ initialData, lotId, mills }: PaddyLotFormProps) {
                   )}
                 />
               )}
-
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
                 {isSubmitting ? "Saving..." : "Save Lot"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
             </div>

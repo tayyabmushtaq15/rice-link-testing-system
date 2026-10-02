@@ -73,7 +73,9 @@ export function ProductionPdfActions({
               printPdf(url)
               window.setTimeout(() => setIsPrinting(false), 1000)
             }}
-            title={error ? "PDF could not be prepared" : compact ? "Print production PDF" : undefined}
+            title={
+              error ? "PDF could not be prepared" : compact ? "Print production PDF" : undefined
+            }
           >
             <Printer className={compact ? "h-4 w-4" : "mr-2 h-4 w-4"} />
             {!compact && (loading || isPrinting ? "Preparing" : "Print PDF")}
