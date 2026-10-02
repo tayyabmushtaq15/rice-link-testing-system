@@ -22,15 +22,20 @@ export async function getChartOfAccounts() {
 
   // Backfill accounts for any ExpenseCategory that hasn't had an Expense posted against it yet,
   // so the Chart of Accounts view is complete even before those categories see any activity.
-  await prisma.$transaction(async (tx) => {
-    const categories = await tx.expenseCategory.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    })
-    for (const category of categories) {
-      await getOrCreateExpenseCategoryAccount(tx, category.id)
-    }
+  const missing = await prisma.expenseCategory.findMany({
+    where: { isActive: true, account: null },
+    select: { id: true },
   })
+  if (missing.length > 0) {
+    await prisma.$transaction(
+      async (tx) => {
+        for (const category of missing) {
+          await getOrCreateExpenseCategoryAccount(tx, category.id)
+        }
+      },
+      { timeout: 30_000 },
+    )
+  }
 
   return prisma.account.findMany({ where: { isActive: true }, orderBy: { code: "asc" } })
 }

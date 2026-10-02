@@ -25,7 +25,7 @@ export default function LoginPage() {
         >
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" required placeholder="admin@example.com" />
+            <Input id="email" name="email" type="email" required placeholder="Enter your email" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -34,18 +34,13 @@ export default function LoginPage() {
               name="password"
               type="password"
               required
-              placeholder="password123"
+              placeholder="Enter your password"
             />
           </div>
           <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700">
             Sign In
           </Button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Demo Accounts: admin@example.com, analyst@example.com, qa@example.com</p>
-          <p>Password for all: password123</p>
-        </div>
       </div>
     </div>
   )
